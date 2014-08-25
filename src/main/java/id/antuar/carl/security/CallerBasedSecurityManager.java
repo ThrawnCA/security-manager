@@ -43,7 +43,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
 			return;
 		}
 		if (!clazz.getProtectionDomain().implies(perm)) {
-			throw new AccessControlException("access denied "+perm, perm);
+			throw new AccessControlException("access denied for "+clazz+": "+perm, perm);
 		}
 		System.out.println("DEBUG: granting "+perm+" to "+clazz);
 	}
