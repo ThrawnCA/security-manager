@@ -9,8 +9,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
 
 	private Collection<String> SYSTEM_PACKAGES = Arrays.asList("java.", "sun.");
 
-	protected Class getLastNonSystemCaller() {
-		Class[] callStack = getClassContext();
+	protected Class getLastNonSystemCaller(Class[] callStack) {
 		for (Class clazz : callStack) {
 			if (clazz == CallerBasedSecurityManager.class) {
 				continue;
@@ -38,7 +37,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
 				return;
 			}
 		}
-		Class clazz = getLastNonSystemCaller();
+		Class clazz = getLastNonSystemCaller(callStack);
 		if (clazz == null) {
 			return;
 		}
