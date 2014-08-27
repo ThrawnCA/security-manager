@@ -1,0 +1,10 @@
+<ruleset xmlns="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0">
+  <rules>
+    <rule groupId="junit">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.*alpha.*</ignoreVersion>
+        <ignoreVersion type="regex">.*beta.*</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+  </rules>
+</ruleset>
