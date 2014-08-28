@@ -16,6 +16,8 @@ import java.util.Collection;
  * which may ultimately result in greater security,
  * since those libraries, if compromised by crafted input,
  * will be unprivileged.
+ *
+ * @author Carl Antuar
  */
 public class CallerBasedSecurityManager extends SecurityManager {
 
@@ -37,7 +39,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
   static {
     LOG_MODE = System.getProperty("java.security.manager.log_mode") != null;
     PERMISSION_FORMAT = "grant codeBase \"%s\" {%n  permission %s%n} // (%s)";
-    SYSTEM_PACKAGES = Arrays.asList("java.", "sun.");
+    SYSTEM_PACKAGES = Arrays.asList("java.", "sun.", "com.jrockit.");
   }
 
   /**
@@ -45,7 +47,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * @return TRUE if the specified class is a built-in JDK/JRE class;
    * otherwise FALSE.
    */
-  private static boolean isSystemClass(final Class clazz) {
+  static boolean isSystemClass(final Class clazz) {
     if (clazz.getClassLoader() != Object.class.getClassLoader()) {
       return false;
     }
@@ -62,7 +64,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * @return The most recent non-system class on the call stack,
    * excluding the security manager itself.
    */
-  private static Class getLastCaller(final Class... callStack) {
+  static Class getLastCaller(final Class... callStack) {
     for (Class clazz : callStack) {
       if (clazz == CallerBasedSecurityManager.class) {
         continue;
