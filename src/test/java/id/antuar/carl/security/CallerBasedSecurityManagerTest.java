@@ -2,6 +2,8 @@ package id.antuar.carl.security;
 
 import org.junit.Test;
 
+import java.security.AllPermission;
+
 import static org.junit.Assert.*;
 
 /**
@@ -46,6 +48,11 @@ public class CallerBasedSecurityManagerTest {
       ),
       CallerBasedSecurityManagerTest.class
     );
+  }
+
+  @Test(expected = SecurityException.class)
+  public void shouldThrowSecurityExceptionForUnprivilegedCode() {
+    new CallerBasedSecurityManager().checkPermission(new AllPermission());
   }
 
   private static class NonSystemClass {}
