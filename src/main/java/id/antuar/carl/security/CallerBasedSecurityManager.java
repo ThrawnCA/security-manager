@@ -36,10 +36,14 @@ public class CallerBasedSecurityManager extends SecurityManager {
   /** Package prefixes for Java API packages. */
   private static final Collection<String> SYSTEM_PACKAGES;
 
+  /** Private helper to manage our special privileges. */
+  private static final PrivilegedActor ACTOR;
+
   static {
     LOG_MODE = System.getProperty("java.security.manager.log_mode") != null;
     PERMISSION_FORMAT = "grant codeBase \"%s\" {%n  permission %s%n} // (%s)";
     SYSTEM_PACKAGES = Arrays.asList("java.", "sun.", "com.jrockit.");
+    ACTOR = new PrivilegedActor();
   }
 
   /**
@@ -85,7 +89,8 @@ public class CallerBasedSecurityManager extends SecurityManager {
   public final void checkPermission(final Permission perm) {
     Class[] callStack = getClassContext();
     for (int i = 2; i < callStack.length; i++) {
-      if (callStack[i] == getClass()) {
+      if (callStack[i] == PrivilegedActor.class
+          && callStack[i + 1] == CallerBasedSecurityManager.class) {
         return;
       }
     }
@@ -93,8 +98,8 @@ public class CallerBasedSecurityManager extends SecurityManager {
     if (clazz == null) {
       return;
     }
-    ProtectionDomain domain = clazz.getProtectionDomain();
-    if (!domain.implies(perm)) {
+    ProtectionDomain domain = ACTOR.getProtectionDomain(clazz);
+    if (!ACTOR.implies(domain, perm)) {
       if (LOG_MODE) {
         System.err.println(
           String.format(PERMISSION_FORMAT,
@@ -106,6 +111,42 @@ public class CallerBasedSecurityManager extends SecurityManager {
       } else {
         throw new AccessControlException("access denied: " + perm, perm);
       }
+    }
+  }
+
+  /**
+   * The SecurityManager needs extra privileges
+   * to interact with the security system,
+   * but these privileges should be restricted to other callers,
+   * which puts it in the risky position of being 'setuid' code,
+   * potentially liable to abuse if it can be tricked into running other
+   * arbitrary code.
+   *
+   * We reduce the risk by delegating privileges to a private helper,
+   * and only granting access when the SecurityManager calls the helper.
+   * To ensure that all is well, we simply need to check that:
+   * - The helper does not do anything that might execute untrusted code.
+   * - The SecurityManager does not give the helper's results
+   * to any other code.
+   */
+  private static class PrivilegedActor {
+    /**
+     * @param clazz The class whose protection domain we want.
+     * @return The ProtectionDomain for the class.
+     */
+    ProtectionDomain getProtectionDomain(final Class clazz) {
+      return clazz.getProtectionDomain();
+    }
+
+    /**
+     * @param domain The ProtectionDomain of the class we are checking.
+     * @param perm The permission that we are checking for.
+     * @return TRUE if the ProtectionDomain holds 'perm',
+     * or holds a permission that implies 'perm';
+     * otherwise FALSE.
+     */
+    boolean implies(final ProtectionDomain domain, final Permission perm) {
+      return domain.implies(perm);
     }
   }
 }
