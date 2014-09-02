@@ -44,7 +44,7 @@
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId><version>2.12.1</version>
         <configuration>
-          <includeTestDirectory>true</includeTestDirectory>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <executions>
           <execution>

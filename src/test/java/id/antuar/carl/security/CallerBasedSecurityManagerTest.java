@@ -18,31 +18,46 @@ import static org.junit.Assert.fail;
  */
 public class CallerBasedSecurityManagerTest {
 
+  /**
+   * Ignore standard Java APIs since they don't initiate actions.
+   */
   @Test
-  public void shouldDetectJavaAPIAsSystemClass() {
-    assertTrue(CallerBasedSecurityManager.isSystemClass(java.lang.Object.class));
+  public final void shouldDetectJavaAPIAsSystemClass() {
+    assertTrue(CallerBasedSecurityManager.isSystemClass(Object.class));
   }
 
+  /**
+   * Ignore internal JVM classes since they are basically like the APIs.
+   */
   @Test
-  public void shouldDetectJVMInternalClassAsSystemClass() {
+  public final void shouldDetectJVMInternalClassAsSystemClass() {
+    Class clazz;
     try {
-      assertTrue(CallerBasedSecurityManager.isSystemClass(Class.forName("sun.misc.BASE64Decoder")));
+      clazz = Class.forName("sun.misc.BASE64Decoder");
+      assertTrue(CallerBasedSecurityManager.isSystemClass(clazz));
     } catch (ClassNotFoundException e) {
       try {
-        assertTrue(CallerBasedSecurityManager.isSystemClass(Class.forName("com.jrockit.mc.rjmx.flr.internal.ContentTypes")));
+        clazz = Class.forName("com.jrockit.mc.rjmx.flr.internal.ContentTypes");
+        assertTrue(CallerBasedSecurityManager.isSystemClass(clazz));
       } catch (ClassNotFoundException e2) {
-        fail("Unknown JVM. Please update the list of internal package names in CallerBasedSecurityManager before using it!");
+        fail("Unknown JVM. Adjust the security manager before using it!");
       }
     }
   }
 
+  /**
+   * Check a generic non-system class that we provide.
+   */
   @Test
-  public void shouldDetectOrdinaryClassAsNonSystemClass() {
+  public final void shouldDetectOrdinaryClassAsNonSystemClass() {
     assertFalse(CallerBasedSecurityManager.isSystemClass(NonSystemClass.class));
   }
 
+  /**
+   * The last non-system caller, when we ask, should be ourselves.
+   */
   @Test
-  public void shouldDetectLastNonSystemCaller() {
+  public final void shouldDetectLastNonSystemCaller() {
     assertSame(
       CallerBasedSecurityManager.getLastCaller(
         CallerBasedSecurityManager.class,
