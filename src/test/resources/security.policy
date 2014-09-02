@@ -1,0 +1,48 @@
+grant codeBase "file:${user.home}/.m2/repository/-" {
+	permission java.io.FilePermission "${user.home}/.m2/repository/-", "read";
+};
+
+grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/-" {
+	permission java.io.FilePermission "${user.dir}/target/-", "read,write";
+	permission java.lang.RuntimePermission "accessDeclaredMembers";
+	permission java.lang.RuntimePermission "setIO";
+	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+	permission java.net.NetPermission "specifyStreamHandler";
+	permission java.util.PropertyPermission "basedir", "write";
+	permission java.util.PropertyPermission "java.class.path", "read,write";
+	permission java.util.PropertyPermission "line.separator", "read";
+	permission java.util.PropertyPermission "localRepository", "write";
+	permission java.util.PropertyPermission "surefire.*", "read,write";
+	permission java.util.PropertyPermission "user.dir", "write";
+};
+
+grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/surefire-junit4/-" {
+	permission java.util.PropertyPermission "sun.*", "read";
+};
+
+grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/surefire-api/-" {
+	permission java.io.FilePermission "${java.io.tmpdir}/-", "read,write,delete";
+	permission java.util.PropertyPermission "*", "read,write";
+};
+
+grant codeBase "file:${user.home}/.m2/repository/junit/-" {
+	permission java.io.FilePermission "${user.dir}/target/-", "read,write";
+	permission java.io.FilePermission "/usr/lib/jvm/-", "read";
+	permission java.lang.RuntimePermission "accessClassInPackage.sun.*";
+	permission java.lang.RuntimePermission "accessDeclaredMembers";
+	permission java.lang.RuntimePermission "createClassLoader";
+	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+	permission java.net.NetPermission "specifyStreamHandler";
+	permission java.util.PropertyPermission "*", "read";
+};
+
+grant codeBase "file:${user.dir}/target/test-classes/-" {
+	permission java.io.FilePermission "${java.io.tmpdir}/-", "read,write,delete";
+	permission java.io.FilePermission "/dev/random", "read";
+	permission java.io.FilePermission "/dev/urandom", "read";
+	permission java.lang.RuntimePermission "accessClassInPackage.sun.*";
+	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+	permission java.security.SecurityPermission "*";
+	permission java.util.PropertyPermission "java.*", "read";
+	permission java.util.PropertyPermission "os.*", "read";
+};

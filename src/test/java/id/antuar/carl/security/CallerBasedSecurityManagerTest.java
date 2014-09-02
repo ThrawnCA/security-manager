@@ -2,9 +2,13 @@ package id.antuar.carl.security;
 
 import org.junit.Test;
 
-import java.security.AllPermission;
+import java.io.File;
+import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
@@ -50,11 +54,27 @@ public class CallerBasedSecurityManagerTest {
     );
   }
 
+  /**
+   * Test policy does not permit changing system properties.
+   */
   @Test(expected = SecurityException.class)
-  public void shouldThrowSecurityExceptionForUnprivilegedCode() {
-    new CallerBasedSecurityManager().checkPermission(new AllPermission());
+  public final void shouldThrowSecurityExceptionForUnprivilegedCode() {
+    System.setProperty("java.io.tmpdir", "foo");
   }
 
-  private static class NonSystemClass {}
+  /**
+   * Test policy does permit writing temporary files.
+   * @exception IOException Shouldn't happen, but if it does, then fail.
+   */
+  @Test
+  public final void shouldNotThrowSecurityExceptionForPrivilegedCode()
+      throws IOException {
+    File.createTempFile("test", null).deleteOnExit();
+  }
+
+  /**
+   * A generic class that should not be detected as a system class.
+   */
+  private static class NonSystemClass { }
 
 }
