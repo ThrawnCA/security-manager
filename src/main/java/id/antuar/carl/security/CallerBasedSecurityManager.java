@@ -22,9 +22,6 @@ public class CallerBasedSecurityManager extends SecurityManager {
    */
   private static final boolean LOG_MODE;
 
-  /** Output format for logging needed permissions. */
-  private static final String PERMISSION_FORMAT;
-
   /** Package prefixes for Java API packages. */
   private static final Collection<String> SYSTEM_PACKAGES;
 
@@ -33,7 +30,6 @@ public class CallerBasedSecurityManager extends SecurityManager {
 
   static {
     LOG_MODE = System.getProperty("java.security.manager.log_mode") != null;
-    PERMISSION_FORMAT = "grant codeBase \"%s\" {%n  permission %s;%n} // (%s)";
     SYSTEM_PACKAGES = Arrays.asList("java.", "sun.");
     ACTOR = new PrivilegedActor();
   }
@@ -95,11 +91,13 @@ public class CallerBasedSecurityManager extends SecurityManager {
       // failure
       if (LOG_MODE) {
         System.err.println(
-          String.format(PERMISSION_FORMAT,
-            domain.getCodeSource().getLocation(),
-            perm.toString().replace("\" \"", "\", \"").replaceAll("[()]", ""),
-            clazz.getName()
-          )
+          new StringBuilder("grant codeBase \"")
+            .append(domain.getCodeSource().getLocation())
+            .append("\" {\n  permission ")
+            .append(perm)
+            .append(";\n} // ")
+            .append(clazz.getName())
+            .toString()
         );
       } else {
         throw new SecurityException("access denied: " + perm);
