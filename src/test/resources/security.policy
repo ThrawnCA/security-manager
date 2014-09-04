@@ -21,18 +21,32 @@ grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/suref
 };
 
 grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/surefire-api/-" {
+	permission java.io.FilePermission "${java.home}/../-", "read";
 	permission java.util.PropertyPermission "*", "read,write";
 };
 
 grant codeBase "file:${user.home}/.m2/repository/junit/-" {
 	permission java.io.FilePermission "${user.dir}/target/-", "read,write";
-	permission java.io.FilePermission "/usr/lib/jvm/-", "read";
+	permission java.io.FilePermission "${java.home}/-", "read";
 	permission java.lang.RuntimePermission "accessClassInPackage.sun.*";
 	permission java.lang.RuntimePermission "accessDeclaredMembers";
 	permission java.lang.RuntimePermission "createClassLoader";
 	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
 	permission java.net.NetPermission "specifyStreamHandler";
 	permission java.util.PropertyPermission "*", "read";
+};
+
+grant codeBase "file:${user.home}/.m2/repository/net/sourceforge/cobertura/cobertura/-" {
+	permission java.io.FilePermission "${java.home}/-", "read";
+	permission java.io.FilePermission "${user.dir}/target/-", "read,write,delete";
+	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
+	permission java.lang.RuntimePermission "accessDeclaredMembers";
+	permission java.lang.RuntimePermission "createClassLoader";
+	permission java.lang.RuntimePermission "loadLibrary.*";
+	permission java.lang.RuntimePermission "reflectionFactoryAccess";
+	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+	permission java.util.PropertyPermission "*", "read";
+	permission java.util.logging.LoggingPermission "control";
 };
 
 grant codeBase "file:${user.dir}/target/test-classes/-" {
