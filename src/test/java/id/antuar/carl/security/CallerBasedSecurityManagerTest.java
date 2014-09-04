@@ -25,17 +25,10 @@ public class CallerBasedSecurityManagerTest {
    */
   @Test
   public final void shouldDetectJVMInternalClassAsSystemClass() {
-    String className;
     try {
-      className = "sun.misc.BASE64Decoder";
-      checkSystemClass(Class.forName(className), true);
+      checkSystemClass(Class.forName("sun.misc.BASE64Decoder"), true);
     } catch (ClassNotFoundException e) {
-      try {
-        className = "com.jrockit.mc.rjmx.flr.internal.ContentTypes";
-        checkSystemClass(Class.forName(className), true);
-      } catch (ClassNotFoundException e2) {
-        Assert.fail("Unknown JVM. Adapt the security manager before using it!");
-      }
+      Assert.fail("Unknown JVM. Adapt the security manager before using it!");
     }
   }
 

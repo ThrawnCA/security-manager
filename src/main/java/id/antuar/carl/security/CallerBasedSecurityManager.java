@@ -34,7 +34,7 @@ public class CallerBasedSecurityManager extends SecurityManager {
   static {
     LOG_MODE = System.getProperty("java.security.manager.log_mode") != null;
     PERMISSION_FORMAT = "grant codeBase \"%s\" {%n  permission %s;%n} // (%s)";
-    SYSTEM_PACKAGES = Arrays.asList("java.", "sun.", "com.jrockit.");
+    SYSTEM_PACKAGES = Arrays.asList("java.", "sun.");
     ACTOR = new PrivilegedActor();
   }
 
