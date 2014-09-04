@@ -21,7 +21,6 @@ grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/suref
 };
 
 grant codeBase "file:${user.home}/.m2/repository/org/apache/maven/surefire/surefire-api/-" {
-	permission java.io.FilePermission "${java.io.tmpdir}/-", "read,write,delete";
 	permission java.util.PropertyPermission "*", "read,write";
 };
 
@@ -37,11 +36,7 @@ grant codeBase "file:${user.home}/.m2/repository/junit/-" {
 };
 
 grant codeBase "file:${user.dir}/target/test-classes/-" {
-	permission java.io.FilePermission "${java.io.tmpdir}/-", "read,write,delete";
-	permission java.io.FilePermission "/dev/random", "read";
-	permission java.io.FilePermission "/dev/urandom", "read";
-	permission java.lang.RuntimePermission "accessClassInPackage.sun.*";
-	permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+	permission java.lang.RuntimePermission "accessClassInPackage.*";
 	permission java.security.SecurityPermission "*";
 	permission java.util.PropertyPermission "java.*", "read";
 	permission java.util.PropertyPermission "os.*", "read";
