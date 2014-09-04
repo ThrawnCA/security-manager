@@ -1,14 +1,7 @@
 package id.antuar.carl.security;
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
@@ -21,9 +14,10 @@ public class CallerBasedSecurityManagerTest {
   /**
    * Ignore standard Java APIs since they don't initiate actions.
    */
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   @Test
   public final void shouldDetectJavaAPIAsSystemClass() {
-    assertTrue(CallerBasedSecurityManager.isSystemClass(Object.class));
+    checkSystemClass(Object.class, true);
   }
 
   /**
@@ -31,16 +25,16 @@ public class CallerBasedSecurityManagerTest {
    */
   @Test
   public final void shouldDetectJVMInternalClassAsSystemClass() {
-    Class clazz;
+    String className;
     try {
-      clazz = Class.forName("sun.misc.BASE64Decoder");
-      assertTrue(CallerBasedSecurityManager.isSystemClass(clazz));
+      className = "sun.misc.BASE64Decoder";
+      checkSystemClass(Class.forName(className), true);
     } catch (ClassNotFoundException e) {
       try {
-        clazz = Class.forName("com.jrockit.mc.rjmx.flr.internal.ContentTypes");
-        assertTrue(CallerBasedSecurityManager.isSystemClass(clazz));
+        className = "com.jrockit.mc.rjmx.flr.internal.ContentTypes";
+        checkSystemClass(Class.forName(className), true);
       } catch (ClassNotFoundException e2) {
-        fail("Unknown JVM. Adjust the security manager before using it!");
+        Assert.fail("Unknown JVM. Adapt the security manager before using it!");
       }
     }
   }
@@ -48,9 +42,25 @@ public class CallerBasedSecurityManagerTest {
   /**
    * Check a generic non-system class that we provide.
    */
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   @Test
   public final void shouldDetectOrdinaryClassAsNonSystemClass() {
-    assertFalse(CallerBasedSecurityManager.isSystemClass(NonSystemClass.class));
+    checkSystemClass(NonSystemClass.class, false);
+  }
+
+  /**
+   * Helper for methods that test the 'isSystemClass' method.
+   * @param clazz The class to check.
+   * @param expectSystem Whether or not 'clazz'
+   * should be treated as a system class.
+   */
+  private static void checkSystemClass(final Class clazz,
+                                       final boolean expectSystem) {
+    Assert.assertEquals(
+      String.format("%s to be treated as system class:", clazz.getName()),
+      expectSystem,
+      CallerBasedSecurityManager.isSystemClass(clazz)
+    );
   }
 
   /**
@@ -58,7 +68,7 @@ public class CallerBasedSecurityManagerTest {
    */
   @Test
   public final void shouldDetectLastNonSystemCaller() {
-    assertSame(
+    Assert.assertSame(
       CallerBasedSecurityManager.getLastCaller(
         CallerBasedSecurityManager.class,
         Object.class,
@@ -78,13 +88,13 @@ public class CallerBasedSecurityManagerTest {
   }
 
   /**
-   * Test policy does permit writing temporary files.
-   * @exception IOException Shouldn't happen, but if it does, then fail.
+   * Test policy does permit reading system properties.
    */
   @Test
-  public final void shouldNotThrowSecurityExceptionForPrivilegedCode()
-      throws IOException {
-    File.createTempFile("test", null).deleteOnExit();
+  public final void shouldNotThrowSecurityExceptionForPrivilegedCode() {
+    Assert.assertFalse("Expected to retrieve temporary directory",
+      System.getProperty("java.io.tmpdir").isEmpty()
+    );
   }
 
   /**
