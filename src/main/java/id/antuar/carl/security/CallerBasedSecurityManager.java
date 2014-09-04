@@ -1,6 +1,5 @@
 package id.antuar.carl.security;
 
-import java.security.AccessControlException;
 import java.security.Permission;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
@@ -9,13 +8,6 @@ import java.util.Collection;
 /**
  * This SecurityManager checks the most recent non-system class
  * on the call stack, instead of every class.
- *
- * This is not suitable for sandboxing Java Applets;
- * however, in a J2EE context, it allows us to greatly reduce
- * the number of permissions granted to third-party libraries,
- * which may ultimately result in greater security,
- * since those libraries, if compromised by crafted input,
- * will be unprivileged.
  *
  * @author Carl Antuar
  */
@@ -51,16 +43,17 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * @return TRUE if the specified class is a built-in JDK/JRE class;
    * otherwise FALSE.
    */
-  static boolean isSystemClass(final Class clazz) {
-    if (clazz.getClassLoader() != Object.class.getClassLoader()) {
-      return false;
-    }
-    for (String packagePrefix : SYSTEM_PACKAGES) {
-      if (clazz.getName().startsWith(packagePrefix)) {
-        return true;
+  protected static boolean isSystemClass(final Class clazz) {
+    boolean isSystem = false;
+    if (clazz.getClassLoader() == Object.class.getClassLoader()) {
+      for (final String packagePrefix : SYSTEM_PACKAGES) {
+        if (clazz.getName().startsWith(packagePrefix)) {
+          isSystem = true;
+          break;
+        }
       }
     }
-    return false;
+    return isSystem;
   }
 
   /**
@@ -68,16 +61,15 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * @return The most recent non-system class on the call stack,
    * excluding the security manager itself.
    */
-  static Class getLastCaller(final Class... callStack) {
-    for (Class clazz : callStack) {
-      if (clazz == CallerBasedSecurityManager.class) {
-        continue;
-      }
-      if (!isSystemClass(clazz)) {
-        return clazz;
+  protected static Class getLastCaller(final Class... callStack) {
+    Class lastCaller = null;
+    for (final Class clazz : callStack) {
+      if (clazz != CallerBasedSecurityManager.class && !isSystemClass(clazz)) {
+        lastCaller = clazz;
+        break;
       }
     }
-    return null;
+    return lastCaller;
   }
 
   /**
@@ -87,19 +79,20 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * @param perm The permission that is being sought.
    */
   public final void checkPermission(final Permission perm) {
-    Class[] callStack = getClassContext();
+    final Class[] callStack = getClassContext();
     for (int i = 2; i < callStack.length; i++) {
       if (callStack[i] == PrivilegedActor.class
           && callStack[i + 1] == CallerBasedSecurityManager.class) {
         return;
       }
     }
-    Class clazz = getLastCaller(callStack);
+    final Class clazz = getLastCaller(callStack);
     if (clazz == null) {
       return;
     }
-    ProtectionDomain domain = ACTOR.getProtectionDomain(clazz);
+    final ProtectionDomain domain = ACTOR.getProtectionDomain(clazz);
     if (!ACTOR.implies(domain, perm)) {
+      // failure
       if (LOG_MODE) {
         System.err.println(
           String.format(PERMISSION_FORMAT,
@@ -109,32 +102,22 @@ public class CallerBasedSecurityManager extends SecurityManager {
           )
         );
       } else {
-        throw new AccessControlException("access denied: " + perm, perm);
+        throw new SecurityException("access denied: " + perm);
       }
     }
   }
 
   /**
-   * The SecurityManager needs extra privileges
-   * to interact with the security system,
-   * but these privileges should be restricted to other callers,
-   * which puts it in the risky position of being 'setuid' code,
-   * potentially liable to abuse if it can be tricked into running other
-   * arbitrary code.
-   *
-   * We reduce the risk by delegating privileges to a private helper,
-   * and only granting access when the SecurityManager calls the helper.
-   * To ensure that all is well, we simply need to check that:
-   * - The helper does not do anything that might execute untrusted code.
-   * - The SecurityManager does not give the helper's results
-   * to any other code.
+   * Private helper that is permitted to ignore privilege checks
+   * iff called by the security manager.
    */
   private static class PrivilegedActor {
+
     /**
      * @param clazz The class whose protection domain we want.
      * @return The ProtectionDomain for the class.
      */
-    ProtectionDomain getProtectionDomain(final Class clazz) {
+    public ProtectionDomain getProtectionDomain(final Class clazz) {
       return clazz.getProtectionDomain();
     }
 
@@ -145,7 +128,8 @@ public class CallerBasedSecurityManager extends SecurityManager {
      * or holds a permission that implies 'perm';
      * otherwise FALSE.
      */
-    boolean implies(final ProtectionDomain domain, final Permission perm) {
+    public boolean implies(final ProtectionDomain domain,
+                           final Permission perm) {
       return domain.implies(perm);
     }
   }
