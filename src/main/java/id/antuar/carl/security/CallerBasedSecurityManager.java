@@ -2,8 +2,6 @@ package id.antuar.carl.security;
 
 import java.security.Permission;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * This SecurityManager checks the most recent non-system class
@@ -20,19 +18,14 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * requested permission, in a suitable format for copying into a
    * policy file, instead of an exception.
    */
-  private static final boolean LOG_MODE;
+  private static final boolean LOG_MODE =
+    System.getProperty("java.security.manager.log_mode") != null;
 
   /** Package prefixes for Java API packages. */
-  private static final Collection<String> SYSTEM_PACKAGES;
+  private static final String[] SYSTEM_PACKAGES = {"java.", "sun."};
 
   /** Private helper to manage our special privileges. */
-  private static final PrivilegedActor ACTOR;
-
-  static {
-    LOG_MODE = System.getProperty("java.security.manager.log_mode") != null;
-    SYSTEM_PACKAGES = Arrays.asList("java.", "sun.");
-    ACTOR = new PrivilegedActor();
-  }
+  private static final PrivilegedActor ACTOR = new PrivilegedActor();
 
   /**
    * @param clazz A class object from the call stack.
@@ -42,10 +35,9 @@ public class CallerBasedSecurityManager extends SecurityManager {
   protected static boolean isSystemClass(final Class clazz) {
     boolean isSystem = false;
     if (clazz.getClassLoader() == Object.class.getClassLoader()) {
-      for (final String packagePrefix : SYSTEM_PACKAGES) {
-        if (clazz.getName().startsWith(packagePrefix)) {
+      for (int i = 0; !isSystem && i < SYSTEM_PACKAGES.length; i++) {
+        if (clazz.getName().startsWith(SYSTEM_PACKAGES[i])) {
           isSystem = true;
-          break;
         }
       }
     }
@@ -59,10 +51,10 @@ public class CallerBasedSecurityManager extends SecurityManager {
    */
   protected static Class getLastCaller(final Class... callStack) {
     Class lastCaller = null;
-    for (final Class clazz : callStack) {
-      if (clazz != CallerBasedSecurityManager.class && !isSystemClass(clazz)) {
-        lastCaller = clazz;
-        break;
+    for (int i = 0; lastCaller == null && i < callStack.length; i++) {
+      if (callStack[i] != CallerBasedSecurityManager.class
+        && !isSystemClass(callStack[i])) {
+        lastCaller = callStack[i];
       }
     }
     return lastCaller;
@@ -74,6 +66,9 @@ public class CallerBasedSecurityManager extends SecurityManager {
    * Throws a SecurityException if the permission is not granted.
    * @param perm The permission that is being sought.
    */
+  // We could refactor this to have one return,
+  // but it would be ugly and/or slow. And we can't afford slow.
+  @SuppressWarnings("PMD.OnlyOneReturn")
   public final void checkPermission(final Permission perm) {
     final Class[] callStack = getClassContext();
     for (int i = 2; i < callStack.length; i++) {
