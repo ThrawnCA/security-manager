@@ -51,9 +51,12 @@ public class CallerBasedSecurityManager extends SecurityManager {
    */
   protected static Class getLastCaller(final Class... callStack) {
     Class lastCaller = null;
-    for (int i = 0; lastCaller == null && i < callStack.length; i++) {
-      if (callStack[i] != CallerBasedSecurityManager.class
-        && !isSystemClass(callStack[i])) {
+    int startIndex = 0;
+    while (callStack[startIndex] == CallerBasedSecurityManager.class) {
+      startIndex++;
+    }
+    for (int i = startIndex; lastCaller == null && i < callStack.length; i++) {
+      if (!isSystemClass(callStack[i])) {
         lastCaller = callStack[i];
       }
     }
