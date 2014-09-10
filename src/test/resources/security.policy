@@ -49,7 +49,12 @@ grant codeBase "file:${user.home}/.m2/repository/net/sourceforge/cobertura/cober
 	permission java.util.logging.LoggingPermission "control";
 };
 
+grant codeBase "file:${user.dir}/target/-" {
+	permission java.util.PropertyPermission "user.dir", "read";
+};
+
 grant codeBase "file:${user.dir}/target/test-classes/-" {
+	permission java.io.FilePermission "${user.dir}/target/-", "read";
 	permission java.lang.RuntimePermission "accessClassInPackage.*";
 	permission java.security.SecurityPermission "*";
 	permission java.util.PropertyPermission "java.*", "read";
