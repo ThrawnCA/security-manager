@@ -1,6 +1,7 @@
 package id.antuar.carl.security;
 
 import java.security.Permission;
+import java.security.AllPermission;
 import java.security.ProtectionDomain;
 
 /**
@@ -21,27 +22,18 @@ public class CallerBasedSecurityManager extends SecurityManager {
   private static final boolean LOG_MODE =
     System.getProperty("java.security.manager.log_mode") != null;
 
-  /** Package prefixes for Java API packages. */
-  private static final String[] SYSTEM_PACKAGES = {"java.", "sun."};
-
   /** Private helper to manage our special privileges. */
   private static final PrivilegedActor ACTOR = new PrivilegedActor();
 
+  /** Singleton instance of AllPermission. */
+  private static final AllPermission ALL_PERM = new AllPermission();
+
   /**
    * @param clazz A class object from the call stack.
-   * @return TRUE if the specified class is a built-in JDK/JRE class;
-   * otherwise FALSE.
+   * @return TRUE if the specified class holds AllPermission; otherwise FALSE.
    */
   protected static boolean isSystemClass(final Class clazz) {
-    boolean isSystem = false;
-    if (clazz.getClassLoader() == Object.class.getClassLoader()) {
-      for (int i = 0; !isSystem && i < SYSTEM_PACKAGES.length; i++) {
-        if (clazz.getName().startsWith(SYSTEM_PACKAGES[i])) {
-          isSystem = true;
-        }
-      }
-    }
-    return isSystem;
+    return ACTOR.implies(clazz, ALL_PERM);
   }
 
   /**
@@ -121,12 +113,22 @@ public class CallerBasedSecurityManager extends SecurityManager {
      * @param domain The ProtectionDomain of the class we are checking.
      * @param perm The permission that we are checking for.
      * @return TRUE if the ProtectionDomain holds 'perm',
-     * or holds a permission that implies 'perm';
-     * otherwise FALSE.
+     * or holds a permission that implies 'perm'; otherwise FALSE.
      */
     public boolean implies(final ProtectionDomain domain,
                            final Permission perm) {
       return domain.implies(perm);
+    }
+
+    /**
+     * @param clazz The class we are checking.
+     * @param perm The permission that we are checking for.
+     * @return TRUE if the class holds 'perm',
+     * or holds a permission that implies 'perm'; otherwise FALSE.
+     */
+    public boolean implies(final Class clazz,
+                           final Permission perm) {
+      return clazz.getProtectionDomain().implies(perm);
     }
   }
 }
