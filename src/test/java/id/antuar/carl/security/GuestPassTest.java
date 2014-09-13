@@ -1,11 +1,16 @@
 package id.antuar.carl.security;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.FilePermission;
 import java.security.AllPermission;
 import java.security.Permission;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Ensure that the GuestPass pseudo-permission correctly interacts
@@ -13,9 +18,11 @@ import java.security.Permission;
  *
  * @author Carl Antuar
  */
-// unit tests don't need explicit constructors
 @SuppressWarnings("PMD.AtLeastOneConstructor")
-public class GuestPassTest {
+public final class GuestPassTest {
+
+  /** 'Set I/O' action for RuntimePermission. */
+  private static final String SET_IO = "setIO";
 
   /** Read action for FilePermission. */
   private static final String READ = "read";
@@ -27,77 +34,48 @@ public class GuestPassTest {
   private static final String TEST_FILE = "target/foo";
 
   /**
-   * Ensure that permissions without arguments can be loaded.
+   * @return Permission parameters and expected results.
    */
-  @Test
-  public final void shouldLoadRealPermissionWithNoPermissionName() {
-    Permission permission =
-      makePermission("java.security.AllPermission", null, null);
-    final Permission expected = new AllPermission();
-    Assert.assertEquals("Should have constructed java.security.AllPermission",
-      expected, permission);
-    permission = makePermission("java.security.AllPermission", "", "");
-    Assert.assertEquals("Should have constructed java.security.AllPermission",
-      expected, permission);
+  @DataProvider
+  public Object[][] permissionParams() {
+    return new Object[][] {
+      {AllPermission.class.getName(), null, null,
+        AbstractCustomSecurityManager.ALL_PERM },
+      {AllPermission.class.getName(), "", "",
+        AbstractCustomSecurityManager.ALL_PERM },
+      {RuntimePermission.class.getName(), SET_IO, null,
+        new RuntimePermission(SET_IO) },
+      {RuntimePermission.class.getName(), SET_IO, "",
+        new RuntimePermission(SET_IO) },
+      {FilePermission.class.getName(), TEST_FILE, READ_WRITE,
+        new FilePermission(TEST_FILE, READ_WRITE) },
+    };
   }
 
   /**
-   * Ensure that permissions with just permission name can be loaded.
+   * @return Permissions for implication comparison.
    */
-  @Test
-  public final void shouldLoadRealPermissionWithPermissionName() {
-    Permission permission =
-      makePermission("java.lang.RuntimePermission", "setIO", null);
-    final Permission expected = new RuntimePermission("setIO");
-    Assert.assertEquals("Should have constructed 'setIO' permission",
-      expected, permission);
-    permission = makePermission("java.lang.RuntimePermission", "setIO", "");
-    Assert.assertEquals("Should have constructed 'setIO' permission",
-      expected, permission);
-  }
-
-  /**
-   * Ensure that permissions with permission name and actions can be loaded.
-   */
-  @Test
-  public final void shouldLoadRealPermissionWithPermissionNameAndActions() {
-    final Permission permission =
-      makePermission(FilePermission.class.getName(), TEST_FILE, READ_WRITE);
-    Assert.assertEquals("Should have constructed r/w permission for 'foo'",
-      new FilePermission(TEST_FILE, READ_WRITE), permission);
-  }
-
-  /**
-   * Ensure that one GuestPass implies only another GuestPass
-   * for a real permission that is implied by the first's real permission.
-   */
-  @Test
-  public final void shouldImplyGuestPassForImpliedPermission() {
+  @DataProvider
+  public Object[][] impliedPermissions() {
     final GuestPass guestPass =
       makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE);
-    Assert.assertFalse(
-      "Should not have implied read permission for 'foo'",
-      guestPass.implies(new FilePermission(TEST_FILE, READ))
-    );
-    Assert.assertFalse(
-      "Should not have implied guest read permission for 'foo-baz'",
-      guestPass.implies(
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE + "-baz", READ)
-      )
-    );
-    Assert.assertTrue(
-      "Should have implied guest read permission for 'foo'",
-      guestPass.implies(
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ)
-      )
-    );
+
+    return new Object[][] {
+      {guestPass, new FilePermission(TEST_FILE, READ), Boolean.FALSE },
+      {guestPass,
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE + "-baz", READ),
+        Boolean.FALSE },
+      {guestPass,
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ),
+        Boolean.TRUE },
+    };
   }
 
   /**
-   * Ensure that GuestPass equals only other GuestPass for the same permission.
+   * @return Permissions for equality comparison.
    */
-  @Test
-  public final void shouldEqualGuestPassForSamePermission() {
+  @DataProvider
+  public Object[][] equalPermissions() {
     final Permission guestPass1 =
       makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ);
     final Permission guestPass2 =
@@ -105,18 +83,82 @@ public class GuestPassTest {
     final Permission guestPass3 =
       makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE);
     final Permission otherPermission =
-      makePermission(AllPermission.class.getName(), null, null);
-    Assert.assertEquals(
-      "Should equal guest pass for same permission",
-      guestPass1, guestPass2
+      makePermission(AllPermission.class.getName(), "", "");
+    return new Object[][] {
+      {guestPass1, guestPass2, Boolean.TRUE },
+      {guestPass1, guestPass3, Boolean.FALSE },
+      {guestPass1, otherPermission, Boolean.FALSE },
+    };
+  }
+
+  /**
+   * Ensure that string parameters result in the expected permission.
+   * @param className The class of the real permission.
+   * @param permissionName The name of the real permission.
+   * @param actions The actions of the real permission.
+   * @param expected The real permission that should result.
+   */
+  @Test(dataProvider = "permissionParams")
+  public void shouldLoadSpecifiedPermissions(final String className,
+                                             final String permissionName,
+                                             final String actions,
+                                             final Permission expected) {
+    assertEquals(
+      makePermission(className, permissionName, actions),
+      expected,
+      "Permission not correctly loaded"
     );
-    Assert.assertNotEquals(
-      "Should not equal guest pass for different permission",
-      guestPass1, guestPass3
-    );
-    Assert.assertNotEquals(
-      "Should not equal non-guest pass",
-      guestPass1, otherPermission
+  }
+
+  /**
+   * Ensure that one GuestPass implies only another GuestPass
+   * for a real permission that is implied by the first's real permission.
+   * @param guestPass Guest pass for comparison.
+   * @param other Permission that may or may not be implied by 'guestPass'.
+   * @param shouldImply Whether we expect 'guestPass' to imply 'other'.
+   */
+  @Test(dataProvider = "impliedPermissions")
+  public void shouldImplyGuestPassForImpliedPermission(
+      final GuestPass guestPass,
+      final Permission other,
+      final boolean shouldImply) {
+    if (shouldImply) {
+      assertTrue(guestPass.implies(other), guestPass + " implies " + other);
+    } else {
+      assertFalse(guestPass.implies(other), guestPass + " implies " + other);
+    }
+  }
+
+  /**
+   * Ensure that GuestPass equals only other GuestPass for the same permission.
+   * @param guestPass Guest pass for comparison.
+   * @param other Permission that may or may not be equal to 'guestPass'.
+   * @param shouldMatch Whether we expect 'guestPass' to equal 'other'.
+   */
+  @Test(dataProvider = "equalPermissions")
+  public void shouldEqualGuestPassForSamePermission(final GuestPass guestPass,
+                                                    final Permission other,
+                                                    final boolean shouldMatch) {
+    if (shouldMatch) {
+      assertEquals(other, guestPass,
+        "Should equal guest pass for same permission");
+    } else {
+      assertNotEquals(other, guestPass,
+        "Should equal only guest pass for same permission");
+    }
+  }
+
+  /**
+   * Verify that toString looks the way we expect.
+   */
+  @Test
+  public void shouldRenderToStringIncludingRealPermission() {
+    assertEquals(
+      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE)
+        .toString(),
+      "(\"id.antuar.carl.security.GuestPass\" "
+      + "(\"java.io.FilePermission\" \"target/foo\" \"read,write\"))"
+      , "Incorrect toString output"
     );
   }
 
@@ -129,8 +171,8 @@ public class GuestPassTest {
    * @return A GuestPass for the specified real permission.
    */
   private static GuestPass makeGuestPass(final String className,
-                                          final String permissionName,
-                                          final String actions) {
+                                         final String permissionName,
+                                         final String actions) {
     try {
       return new GuestPass(className, permissionName, actions);
     } catch (ReflectiveOperationException e) {
@@ -147,8 +189,8 @@ public class GuestPassTest {
    * @return A Permission object representing the specified permission.
    */
   private static Permission makePermission(final String className,
-                                          final String permissionName,
-                                          final String actions) {
+                                           final String permissionName,
+                                           final String actions) {
     try {
       return GuestPass.toPermission(className, permissionName, actions);
     } catch (ReflectiveOperationException e) {

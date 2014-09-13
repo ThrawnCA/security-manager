@@ -1,18 +1,14 @@
 package id.antuar.carl.security;
 
-import org.junit.After;
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.security.AllPermission;
 import java.security.Permission;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
@@ -20,60 +16,26 @@ import static org.junit.Assert.fail;
  *
  * @author Carl Antuar
  */
+@SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class AbstractCustomSecurityManagerTest {
 
   /**
-   * Wipe out any security manager configuration.
-   */
-  @After
-  public void tearDown() {
-    System.setSecurityManager(null);
-    System.clearProperty(AbstractCustomSecurityManager.LOG_PROPERTY);
-  }
-
-  /**
-   * Ignore standard Java APIs since they don't initiate actions.
-   */
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  @Test
-  public void shouldDetectJavaAPIAsSystemClass() {
-    checkSystemClass(Object.class, true);
-  }
-
-  /**
-   * Ignore internal JVM classes since they are basically like the APIs.
+   * Ignore any class that has been granted AllPermission,
+   * since we assume that it is a system class.
    */
   @Test
-  public void shouldDetectJVMInternalClassAsSystemClass() {
-    try {
-      checkSystemClass(Class.forName("sun.misc.BASE64Decoder"), true);
-    } catch (ClassNotFoundException e) {
-      fail("Unknown JVM. Adapt the security manager before using it!");
-    }
+  public void shouldDetectSystemClass() {
+    assertTrue(AbstractCustomSecurityManager.isSystemClass(Object.class),
+      "Object treated as a system class");
   }
 
   /**
-   * Check a generic non-system class that we provide.
+   * Check a non-system class (this one).
    */
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   @Test
   public void shouldDetectOrdinaryClassAsNonSystemClass() {
-    checkSystemClass(getClass(), false);
-  }
-
-  /**
-   * Helper for methods that test the 'isSystemClass' method.
-   * @param clazz The class to check.
-   * @param expectSystem Whether or not 'clazz'
-   * should be treated as a system class.
-   */
-  private static void checkSystemClass(final Class clazz,
-                                       final boolean expectSystem) {
-    assertEquals(
-      String.format("%s to be treated as system class:", clazz.getName()),
-      expectSystem,
-      AbstractCustomSecurityManager.isSystemClass(clazz)
-    );
+    assertFalse(AbstractCustomSecurityManager.isSystemClass(getClass()),
+      getClass().getName() + " treated as a system class");
   }
 
   /**
@@ -82,11 +44,15 @@ public final class AbstractCustomSecurityManagerTest {
   @Test
   public void shouldBypassSecurityToCheckPermissions() {
     System.setSecurityManager(new CallerBasedSecurityManager());
-    assertFalse("Test should not have AllPermission",
-      AbstractCustomSecurityManager.implies(
-        getClass(), CallerBasedSecurityManager.ALL_PERM
-      )
-    );
+    try {
+      assertFalse(
+        AbstractCustomSecurityManager.implies(
+          getClass(), CallerBasedSecurityManager.ALL_PERM
+        ), "Test should not have AllPermission"
+      );
+    } finally {
+      System.setSecurityManager(null);
+    }
   }
 
   /**
@@ -97,13 +63,21 @@ public final class AbstractCustomSecurityManagerTest {
   public void shouldNotThrowSecurityExceptionInLogMode()
     throws UnsupportedEncodingException {
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    System.setErr(new PrintStream(baos, true, "UTF-8"));
-    System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "");
-    new FailingSecurityManager().checkPermission(new AllPermission());
-    assertTrue("Expected permission to be logged",
-      new String(baos.toByteArray(), "UTF-8")
-        .contains(AllPermission.class.getName())
-    );
+    final PrintStream realStdErr = System.err;
+    try {
+      System.setErr(new PrintStream(baos, true, "UTF-8"));
+      System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "");
+      new FailingSecurityManager()
+        .checkPermission(AbstractCustomSecurityManager.ALL_PERM);
+      assertTrue(
+        new String(baos.toByteArray(), "UTF-8").contains(
+          AbstractCustomSecurityManager.ALL_PERM.getClass().getName()
+        ), "Expected permission to be logged"
+      );
+    } finally {
+      System.setErr(realStdErr);
+      System.clearProperty(AbstractCustomSecurityManager.LOG_PROPERTY);
+    }
   }
 
   /**

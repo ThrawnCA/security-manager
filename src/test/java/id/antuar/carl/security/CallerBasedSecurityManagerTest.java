@@ -1,13 +1,13 @@
 package id.antuar.carl.security;
 
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 import java.security.Permission;
 import java.util.PropertyPermission;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
@@ -15,7 +15,6 @@ import static org.junit.Assert.fail;
  *
  * @author Carl Antuar
  */
-// unit tests don't need explicit constructors
 @SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class CallerBasedSecurityManagerTest {
 
@@ -27,7 +26,7 @@ public final class CallerBasedSecurityManagerTest {
     final Class<?> manager = CallerBasedSecurityManager.class;
     final Class<?> test = CallerBasedSecurityManagerTest.class;
     final Class<?> system = Object.class;
-    assertSame("Wrong caller identified",
+    assertSame(
       CallerBasedSecurityManager.getLastCaller(
         manager,
         manager,
@@ -35,7 +34,8 @@ public final class CallerBasedSecurityManagerTest {
         manager,
         test
       ),
-      manager
+      manager,
+      "Wrong caller identified"
     );
   }
 
@@ -44,22 +44,23 @@ public final class CallerBasedSecurityManagerTest {
    */
   @Test
   public void shouldReturnNullForAllSystemStack() {
-    assertNull("No caller expected for all-system stack",
+    assertNull(
       CallerBasedSecurityManager.getLastCaller(
         Object.class,
         Object.class,
         Object.class
-      )
+      ), "No caller expected for all-system stack"
     );
   }
 
   /**
    * Ensure that exception is thrown for permission we don't have.
    */
-  @Test(expected = SecurityException.class)
+  @Test(expectedExceptions = SecurityException.class)
   public void shouldThrowSecurityExceptionForUnprivilegedCode() {
     final Permission perm = new PropertyPermission("java.io.tmpdir", "write");
     new CallerBasedSecurityManager().checkPermission(perm);
+    fail("Should have failed to alter system temporary directory");
   }
 
   /**
