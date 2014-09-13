@@ -1,15 +1,46 @@
 package id.antuar.carl.security;
 
-import org.junit.Assert;
+import org.junit.After;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.security.AllPermission;
+import java.security.Permission;
+import java.util.PropertyPermission;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+/*
+ * Checkstyle complains about star imports,
+ * but PMD JUnit ruleset doesn't verify non-static imports.
+ * Checkstyle insists on only one assertion per test,
+ * but PMD complains about too many methods. Argh.
+ * Once we split CallerBasedSecurityManager, we can improve this.
+ */
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
  * algorithms are correct.
  *
  * @author Carl Antuar
  */
+@SuppressWarnings({ "PMD.TooManyStaticImports", "PMD.TooManyMethods" })
 public class CallerBasedSecurityManagerTest {
+
+  /**
+   * Wipe out any security manager configuration.
+   */
+  @After
+  public final void tearDown() {
+    System.setSecurityManager(null);
+    System.clearProperty(CallerBasedSecurityManager.LOG_PROPERTY);
+  }
 
   /**
    * Ignore standard Java APIs since they don't initiate actions.
@@ -28,7 +59,7 @@ public class CallerBasedSecurityManagerTest {
     try {
       checkSystemClass(Class.forName("sun.misc.BASE64Decoder"), true);
     } catch (ClassNotFoundException e) {
-      Assert.fail("Unknown JVM. Adapt the security manager before using it!");
+      fail("Unknown JVM. Adapt the security manager before using it!");
     }
   }
 
@@ -38,7 +69,7 @@ public class CallerBasedSecurityManagerTest {
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   @Test
   public final void shouldDetectOrdinaryClassAsNonSystemClass() {
-    checkSystemClass(NonSystemClass.class, false);
+    checkSystemClass(getClass(), false);
   }
 
   /**
@@ -49,7 +80,7 @@ public class CallerBasedSecurityManagerTest {
    */
   private static void checkSystemClass(final Class clazz,
                                        final boolean expectSystem) {
-    Assert.assertEquals(
+    assertEquals(
       String.format("%s to be treated as system class:", clazz.getName()),
       expectSystem,
       CallerBasedSecurityManager.isSystemClass(clazz)
@@ -61,38 +92,103 @@ public class CallerBasedSecurityManagerTest {
    */
   @Test
   public final void shouldDetectLastNonSystemCaller() {
-    Assert.assertSame(
+    final Class<?> manager = CallerBasedSecurityManager.class;
+    final Class<?> test = CallerBasedSecurityManagerTest.class;
+    final Class<?> system = Object.class;
+    assertSame("Wrong caller identified",
       CallerBasedSecurityManager.getLastCaller(
-        CallerBasedSecurityManager.class,
-        Object.class,
-        CallerBasedSecurityManagerTest.class,
-        java.io.FileOutputStream.class
+        manager,
+        manager,
+        system,
+        manager,
+        test
       ),
-      CallerBasedSecurityManagerTest.class
+      manager
     );
   }
 
   /**
-   * Test policy does not permit changing system properties.
+   * Completely-privileged stacks should be ignored.
+   */
+  @Test
+  public final void shouldReturnNullForAllSystemStack() {
+    assertNull("No caller expected for all-system stack",
+      CallerBasedSecurityManager.getLastCaller(
+        Object.class,
+        Object.class,
+        Object.class
+      )
+    );
+  }
+
+  /**
+   * Ensure that exception is thrown for permission we don't have.
    */
   @Test(expected = SecurityException.class)
   public final void shouldThrowSecurityExceptionForUnprivilegedCode() {
-    System.setProperty("java.io.tmpdir", "foo");
+    final Permission perm = new PropertyPermission("java.io.tmpdir", "write");
+    new CallerBasedSecurityManager().checkPermission(perm);
   }
 
   /**
-   * Test policy does permit reading system properties.
+   * Test policy permits reading system properties.
    */
   @Test
   public final void shouldNotThrowSecurityExceptionForPrivilegedCode() {
-    Assert.assertFalse("Expected to retrieve temporary directory",
-      System.getProperty("java.io.tmpdir").isEmpty()
+    final Permission perm = new PropertyPermission("java.io.tmpdir", "read");
+    try {
+      new CallerBasedSecurityManager().checkPermission(perm);
+    } catch (SecurityException e) {
+      fail("Expected permission " + perm + " to be granted");
+    }
+  }
+
+  /**
+   * Check the security bypass for privileged code.
+   */
+  @Test
+  public final void shouldBypassSecurityToCheckPermissions() {
+    System.setSecurityManager(new CallerBasedSecurityManager());
+    assertFalse("Test should not have AllPermission",
+      CallerBasedSecurityManager.implies(
+        getClass(), CallerBasedSecurityManager.ALL_PERM
+      )
     );
   }
 
   /**
-   * A generic class that should not be detected as a system class.
+   * Completely-privileged stacks should be ignored.
    */
-  private static class NonSystemClass { }
+  @Test
+  public final void shouldNotThrowSecurityExceptionForSystemCode() {
+    final Permission perm = new PropertyPermission("java.io.tmpdir", "read");
+    try {
+      new CallerBasedSecurityManager().checkPermission(
+        new Class<?>[] {
+          Object.class, Object.class, Object.class
+        }
+        , perm
+      );
+    } catch (SecurityException e) {
+      fail("System code should be ignored");
+    }
+  }
+
+  /**
+   * Ensure no exception happens in log mode.
+   * @exception UnsupportedEncodingException Should never happen for UTF-8.
+   */
+  @Test
+  public final void shouldNotThrowSecurityExceptionInLogMode()
+    throws UnsupportedEncodingException {
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos, true, "UTF-8"));
+    System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "");
+    new CallerBasedSecurityManager().checkPermission(new AllPermission());
+    assertTrue("Expected permission to be logged",
+      new String(baos.toByteArray(), "UTF-8")
+        .contains(AllPermission.class.getName())
+    );
+  }
 
 }
