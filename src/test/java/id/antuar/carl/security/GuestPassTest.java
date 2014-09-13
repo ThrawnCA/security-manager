@@ -76,18 +76,17 @@ public final class GuestPassTest {
    */
   @DataProvider
   public Object[][] equalPermissions() {
-    final Permission guestPass1 =
+    final Permission guestPass =
       makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ);
-    final Permission guestPass2 =
-      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ);
-    final Permission guestPass3 =
-      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE);
-    final Permission otherPermission =
-      makePermission(AllPermission.class.getName(), "", "");
+
     return new Object[][] {
-      {guestPass1, guestPass2, Boolean.TRUE },
-      {guestPass1, guestPass3, Boolean.FALSE },
-      {guestPass1, otherPermission, Boolean.FALSE },
+      {guestPass,
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ),
+        Boolean.TRUE },
+      {guestPass,
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE),
+        Boolean.FALSE },
+      {guestPass, new AllPermission(), Boolean.FALSE },
     };
   }
 
@@ -99,12 +98,14 @@ public final class GuestPassTest {
    * @param expected The real permission that should result.
    */
   @Test(dataProvider = "permissionParams")
-  public void shouldLoadSpecifiedPermissions(final String className,
-                                             final String permissionName,
-                                             final String actions,
-                                             final Permission expected) {
+  public void shouldLoadSpecifiedPermissions(
+      final String className,
+      final String permissionName,
+      final String actions,
+      final Permission expected
+    ) {
     assertEquals(
-      makePermission(className, permissionName, actions),
+      makeGuestPass(className, permissionName, actions).getPermission(),
       expected,
       "Permission not correctly loaded"
     );
@@ -121,7 +122,8 @@ public final class GuestPassTest {
   public void shouldImplyGuestPassForImpliedPermission(
       final GuestPass guestPass,
       final Permission other,
-      final boolean shouldImply) {
+      final boolean shouldImply
+    ) {
     if (shouldImply) {
       assertTrue(guestPass.implies(other), guestPass + " implies " + other);
     } else {
@@ -136,9 +138,11 @@ public final class GuestPassTest {
    * @param shouldMatch Whether we expect 'guestPass' to equal 'other'.
    */
   @Test(dataProvider = "equalPermissions")
-  public void shouldEqualGuestPassForSamePermission(final GuestPass guestPass,
-                                                    final Permission other,
-                                                    final boolean shouldMatch) {
+  public void shouldEqualGuestPassForSamePermission(
+      final GuestPass guestPass,
+      final Permission other,
+      final boolean shouldMatch
+    ) {
     if (shouldMatch) {
       assertEquals(other, guestPass,
         "Should equal guest pass for same permission");
@@ -170,31 +174,15 @@ public final class GuestPassTest {
    * @param actions The actions of the real permission, if any.
    * @return A GuestPass for the specified real permission.
    */
-  private static GuestPass makeGuestPass(final String className,
-                                         final String permissionName,
-                                         final String actions) {
+  private static GuestPass makeGuestPass(
+      final String className,
+      final String permissionName,
+      final String actions
+    ) {
     try {
       return new GuestPass(className, permissionName, actions);
     } catch (ReflectiveOperationException e) {
       throw new AssertionError("Unable to construct GuestPass", e);
-    }
-  }
-
-  /**
-   * Construct a Permission without throwing checked exceptions.
-   * Throw AssertionError instead.
-   * @param className The class name of the permission.
-   * @param permissionName The permission name of the permission, if any.
-   * @param actions The actions of the permission, if any.
-   * @return A Permission object representing the specified permission.
-   */
-  private static Permission makePermission(final String className,
-                                           final String permissionName,
-                                           final String actions) {
-    try {
-      return GuestPass.toPermission(className, permissionName, actions);
-    } catch (ReflectiveOperationException e) {
-      throw new AssertionError("Unable to construct permission", e);
     }
   }
 

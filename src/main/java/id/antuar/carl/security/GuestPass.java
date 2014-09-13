@@ -39,6 +39,13 @@ public final class GuestPass extends Permission {
   }
 
   /**
+   * @return The real permission wrapped by this GuestPass.
+   */
+  protected Permission getPermission() {
+    return realPermission;
+  }
+
+  /**
    * @param permission The permission for which we are seeking.
    * @return TRUE iff 'permission' is a GuestPass whose wrapped permission
    * is implied by this GuestPass' wrapped permission.
