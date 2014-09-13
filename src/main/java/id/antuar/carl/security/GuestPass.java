@@ -11,7 +11,7 @@ import java.security.Permission;
  * that holds the real version of the wrapped permission.
  * @author Carl Antuar
  */
-public class GuestPass extends Permission {
+public final class GuestPass extends Permission {
 
   /** Serialization ID - might not be needed. */
   private static final long serialVersionUID = 20140910L;
@@ -44,7 +44,7 @@ public class GuestPass extends Permission {
    * is implied by this GuestPass' wrapped permission.
    */
   @Override
-  public final boolean implies(final Permission permission) {
+  public boolean implies(final Permission permission) {
     return permission instanceof GuestPass
       && realPermission.implies(((GuestPass) permission).realPermission);
   }
@@ -53,7 +53,7 @@ public class GuestPass extends Permission {
    * @return Empty string. GuestPass has no actions of its own.
    */
   @Override
-  public final String getActions() {
+  public String getActions() {
     return "";
   }
 
@@ -63,7 +63,7 @@ public class GuestPass extends Permission {
    * is equal to this GuestPass' wrapped permission.
    */
   @Override
-  public final boolean equals(final Object other) {
+  public boolean equals(final Object other) {
     return other instanceof GuestPass
       && realPermission.equals(((GuestPass) other).realPermission);
   }
@@ -72,7 +72,7 @@ public class GuestPass extends Permission {
    * @return The hash code of the wrapped permission.
    */
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return realPermission.hashCode();
   }
 
@@ -102,6 +102,20 @@ public class GuestPass extends Permission {
       constructorArgs = new String[] {permissionName, actions};
     }
     return (Permission) constructor.newInstance(constructorArgs);
+  }
+
+  /**
+   * @return String representation of this GuestPass,
+   * including the real permission it stands for.
+   */
+  @Override
+  public String toString() {
+    return new StringBuilder("(\"")
+      .append(getClass().getName())
+      .append("\" ")
+      .append(realPermission)
+      .append(')')
+      .toString();
   }
 
 }
