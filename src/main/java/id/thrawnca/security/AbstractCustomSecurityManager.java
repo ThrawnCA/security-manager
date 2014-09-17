@@ -1,5 +1,10 @@
 package id.thrawnca.security;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.security.Permission;
 import java.security.AllPermission;
 import java.security.ProtectionDomain;
@@ -20,7 +25,8 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   /**
    * The system property that controls log mode.
    */
-  protected static final String LOG_PROPERTY = "java.security.manager.log_mode";
+  protected static final String LOG_PROPERTY =
+    "thrawnca.security.manager.log_mode";
 
   /**
    * This is determined by the presence of the system property
@@ -29,7 +35,29 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * requested permission, in a suitable format for copying into a
    * policy file, instead of an exception.
    */
-  private final boolean logMode = System.getProperty(LOG_PROPERTY) != null;
+  private final boolean logMode;
+
+  /** Collection of logged failures, if we are in log mode. */
+  private final Map<ProtectionDomain, Set<Permission>> permissionsNeeded;
+
+  /**
+   * Constructs a new security manager.
+   * If 'thrawnca.security.manager.log_mode' is set,
+   * then it is created in log mode;
+   * otherwise, it is in enforcement mode.
+   */
+  public AbstractCustomSecurityManager() {
+    super();
+    logMode = Boolean.parseBoolean(System.getProperty(LOG_PROPERTY));
+    if (logMode) {
+      permissionsNeeded = new HashMap<ProtectionDomain, Set<Permission>>();
+      Runtime.getRuntime().addShutdownHook(
+        new Thread(new FailedPermissionsLogger(permissionsNeeded))
+      );
+    } else {
+      permissionsNeeded = null;
+    }
+  }
 
   /**
    * @param clazz A class object from the call stack.
@@ -96,19 +124,25 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   protected final void handleFailure(final Class clazz,
                                      final Permission perm) {
     if (logMode) {
-      System.err.println(
-        new StringBuilder("grant codeBase \"")
-          .append(ACTOR.getProtectionDomain(clazz)
-            .getCodeSource().getLocation())
-          .append("\" {\n  permission ")
-          .append(perm)
-          .append(";\n} // ")
-          .append(clazz.getName())
-          .toString()
-      );
+      logFailure(ACTOR.getProtectionDomain(clazz), perm);
     } else {
       throw new SecurityException("access denied: " + perm);
     }
+  }
+
+  /**
+   * Record that a PermissionDomain needs extra permission to run.
+   * @param domain The ProtectionDomain with insufficient permissions.
+   * @param perm The extra permission needed.
+   */
+  private void logFailure(
+      final ProtectionDomain domain,
+      final Permission perm
+    ) {
+    if (!permissionsNeeded.containsKey(domain)) {
+      permissionsNeeded.put(domain, new HashSet<Permission>());
+    }
+    permissionsNeeded.get(domain).add(perm);
   }
 
   /**
@@ -133,6 +167,50 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
     protected boolean implies(final Class clazz,
                            final Permission perm) {
       return clazz.getProtectionDomain().implies(perm);
+    }
+  }
+
+  /**
+   * Outputs all of the failed permissions from this run.
+   */
+  private static class FailedPermissionsLogger implements Runnable {
+
+    /** The permissions that have been needed and not granted. */
+    private final Map<ProtectionDomain, Set<Permission>> permissionsNeeded;
+
+    /**
+     * @param permissionMap A reference to
+     * the map of permissions that will be logged.
+     * NB The contents of this map may be externally altered
+     * before the logger is actually run.
+     */
+    public FailedPermissionsLogger(
+        final Map<ProtectionDomain, Set<Permission>> permissionMap
+      ) {
+      permissionsNeeded = permissionMap;
+    }
+
+    /**
+     * Output all of the permission failures from this VM execution
+     * to the standard error stream.
+     */
+    public void run() {
+      final Iterator<Map.Entry<ProtectionDomain, Set<Permission>>> domains =
+        permissionsNeeded.entrySet().iterator();
+      while (domains.hasNext()) {
+        final Map.Entry<ProtectionDomain, Set<Permission>> entry =
+          domains.next();
+        System.err.print("grant codeBase \"");
+        System.err.print(entry.getKey().getCodeSource().getLocation());
+        System.err.println("\" {");
+        final Iterator<Permission> permissions = entry.getValue().iterator();
+        while (permissions.hasNext()) {
+          System.err.print("  permission ");
+          System.err.print(permissions.next());
+          System.err.println(';');
+        }
+        System.err.println('}');
+      }
     }
   }
 }

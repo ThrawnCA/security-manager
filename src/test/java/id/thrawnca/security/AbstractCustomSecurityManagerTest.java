@@ -2,13 +2,11 @@ package id.thrawnca.security;
 
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.security.Permission;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * Ensure, as much as possible, that the CallerBasedSecurityManager
@@ -57,27 +55,19 @@ public final class AbstractCustomSecurityManagerTest {
 
   /**
    * Ensure no exception happens in log mode.
-   * @exception UnsupportedEncodingException Should never happen for UTF-8.
    */
   @Test
-  public void shouldNotThrowSecurityExceptionInLogMode()
-    throws UnsupportedEncodingException {
-    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    final PrintStream realStdErr = System.err;
+  public void shouldNotThrowSecurityExceptionInLogMode() {
     try {
-      System.setErr(new PrintStream(baos, true, "UTF-8"));
-      System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "");
+      System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "true");
       new FailingSecurityManager()
         .checkPermission(AbstractCustomSecurityManager.ALL_PERM);
-      assertTrue(
-        new String(baos.toByteArray(), "UTF-8").contains(
-          AbstractCustomSecurityManager.ALL_PERM.getClass().getName()
-        ), "Expected permission to be logged"
-      );
+    } catch (SecurityException e) {
+      fail("Should not have thrown exception in log mode", e);
     } finally {
-      System.setErr(realStdErr);
       System.clearProperty(AbstractCustomSecurityManager.LOG_PROPERTY);
     }
+
   }
 
   /**
