@@ -1,4 +1,4 @@
-package id.antuar.carl.security;
+package id.thrawnca.security;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -160,7 +160,7 @@ public final class GuestPassTest {
     assertEquals(
       makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE)
         .toString(),
-      "(\"id.antuar.carl.security.GuestPass\" "
+      "(\"id.thrawnca.security.GuestPass\" "
       + "(\"java.io.FilePermission\" \"target/foo\" \"read,write\"))"
       , "Incorrect toString output"
     );

@@ -1,4 +1,4 @@
-package id.antuar.carl.security;
+package id.thrawnca.security;
 
 import java.security.Permission;
 
