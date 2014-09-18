@@ -4,6 +4,7 @@ import org.testng.annotations.Test;
 
 import java.security.Permission;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -54,6 +55,25 @@ public final class AbstractCustomSecurityManagerTest {
   }
 
   /**
+   * Check that the security manager itself
+   * is stripped from the call stack.
+   */
+  @Test
+  public void shouldTrimSecurityManagerFromCallStack() {
+    assertEquals(
+      new FailingSecurityManager().trimCallStack(
+        Object.class,
+        SecurityManager.class,
+        AbstractCustomSecurityManager.class,
+        FailingSecurityManager.class,
+        AbstractCustomSecurityManagerTest.class
+      ),
+      new Class[] {AbstractCustomSecurityManagerTest.class},
+      "Should have trimmed security manager and parent classes from stack"
+    );
+  }
+
+  /**
    * Ensure no exception happens in log mode.
    */
   @Test
@@ -77,14 +97,14 @@ public final class AbstractCustomSecurityManagerTest {
   private static final class FailingSecurityManager
     extends AbstractCustomSecurityManager {
     /**
-     * Calls the handleFailure method with the first class on the stack.
+     * Calls the handleFailure method with the whole call stack.
      * @param callStack The call stack to check.
      * @param perm The permission being checked.
      */
     @Override
     protected void checkPermission(final Class[] callStack,
                                    final Permission perm) {
-      handleFailure(callStack[0], perm);
+      handleFailure(perm, callStack);
     }
   }
 
