@@ -92,8 +92,25 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   public final void checkPermission(final Permission perm) {
     final Class[] callStack = getClassContext();
     if (!hasSecurityBypass(callStack)) {
-      checkPermission(callStack, perm);
+      checkPermission(trimCallStack(callStack), perm);
     }
+  }
+
+  /**
+   * Trim the security manager off the start of the call stack.
+   * @param callStack The call stack to trim.
+   * @return The call stack without the security manager at the start.
+   */
+  protected final Class[] trimCallStack(final Class... callStack) {
+    int startIndex = 0;
+    while (callStack[startIndex].isAssignableFrom(getClass())) {
+      startIndex++;
+    }
+    final Class[] trimmedCallStack = new Class[callStack.length - startIndex];
+    System.arraycopy(
+      callStack, startIndex, trimmedCallStack, 0, trimmedCallStack.length
+    );
+    return trimmedCallStack;
   }
 
   /**

@@ -17,12 +17,7 @@ public class CallerBasedSecurityManager extends AbstractCustomSecurityManager {
    */
   protected static Class getLastCaller(final Class... callStack) {
     Class lastCaller = null;
-    int startIndex = 0;
-    while (callStack[startIndex] == CallerBasedSecurityManager.class
-      || callStack[startIndex] == AbstractCustomSecurityManager.class) {
-      startIndex++;
-    }
-    for (int i = startIndex; lastCaller == null && i < callStack.length; i++) {
+    for (int i = 0; lastCaller == null && i < callStack.length; i++) {
       if (!isSystemClass(callStack[i])) {
         lastCaller = callStack[i];
       }
