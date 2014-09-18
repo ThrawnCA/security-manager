@@ -39,15 +39,15 @@ public final class GuestPassTest {
   @DataProvider
   public Object[][] permissionParams() {
     return new Object[][] {
-      {AllPermission.class.getName(), null, null,
+      {AllPermission.class.getName(), null,
         AbstractCustomSecurityManager.ALL_PERM },
-      {AllPermission.class.getName(), "", "",
+      {AllPermission.class.getName(), "",
         AbstractCustomSecurityManager.ALL_PERM },
-      {RuntimePermission.class.getName(), SET_IO, null,
+      {RuntimePermission.class.getName(), SET_IO,
         new RuntimePermission(SET_IO) },
-      {RuntimePermission.class.getName(), SET_IO, "",
+      {RuntimePermission.class.getName(), SET_IO,
         new RuntimePermission(SET_IO) },
-      {FilePermission.class.getName(), TEST_FILE, READ_WRITE,
+      {FilePermission.class.getName(), TEST_FILE + '|' + READ_WRITE,
         new FilePermission(TEST_FILE, READ_WRITE) },
     };
   }
@@ -58,15 +58,17 @@ public final class GuestPassTest {
   @DataProvider
   public Object[][] impliedPermissions() {
     final GuestPass guestPass =
-      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE);
+      makeGuestPass(FilePermission.class.getName(),
+        TEST_FILE + '|' + READ_WRITE);
 
     return new Object[][] {
       {guestPass, new FilePermission(TEST_FILE, READ), Boolean.FALSE },
       {guestPass,
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE + "-baz", READ),
+        makeGuestPass(FilePermission.class.getName(),
+          TEST_FILE + "-baz" + '|' + READ),
         Boolean.FALSE },
       {guestPass,
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ),
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE + '|' + READ),
         Boolean.TRUE },
     };
   }
@@ -77,14 +79,15 @@ public final class GuestPassTest {
   @DataProvider
   public Object[][] equalPermissions() {
     final Permission guestPass =
-      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ);
+      makeGuestPass(FilePermission.class.getName(), TEST_FILE + '|' + READ);
 
     return new Object[][] {
       {guestPass,
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ),
+        makeGuestPass(FilePermission.class.getName(), TEST_FILE + '|' + READ),
         Boolean.TRUE },
       {guestPass,
-        makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE),
+        makeGuestPass(FilePermission.class.getName(),
+          TEST_FILE + '|' + READ_WRITE),
         Boolean.FALSE },
       {guestPass, new AllPermission(), Boolean.FALSE },
     };
@@ -93,19 +96,17 @@ public final class GuestPassTest {
   /**
    * Ensure that string parameters result in the expected permission.
    * @param className The class of the real permission.
-   * @param permissionName The name of the real permission.
-   * @param actions The actions of the real permission.
+   * @param parameters Any parameters to construct the permission.
    * @param expected The real permission that should result.
    */
   @Test(dataProvider = "permissionParams")
   public void shouldLoadSpecifiedPermissions(
       final String className,
-      final String permissionName,
-      final String actions,
+      final String parameters,
       final Permission expected
     ) {
     assertEquals(
-      makeGuestPass(className, permissionName, actions).getPermission(),
+      makeGuestPass(className, parameters).getPermission(),
       expected,
       "Permission not correctly loaded"
     );
@@ -158,8 +159,9 @@ public final class GuestPassTest {
   @Test
   public void shouldRenderToStringIncludingRealPermission() {
     assertEquals(
-      makeGuestPass(FilePermission.class.getName(), TEST_FILE, READ_WRITE)
-        .toString(),
+      makeGuestPass(
+        FilePermission.class.getName(), TEST_FILE + '|' + READ_WRITE
+      ).toString(),
       "(\"id.thrawnca.security.GuestPass\" "
       + "(\"java.io.FilePermission\" \"target/foo\" \"read,write\"))"
       , "Incorrect toString output"
@@ -170,19 +172,18 @@ public final class GuestPassTest {
    * Construct a GuestPass without throwing checked exceptions.
    * Throw AssertionError instead.
    * @param className The class name of the real permission.
-   * @param permissionName The permission name of real the permission, if any.
-   * @param actions The actions of the real permission, if any.
+   * @param parameters Any parameters to construct the permission.
    * @return A GuestPass for the specified real permission.
    */
   private static GuestPass makeGuestPass(
       final String className,
-      final String permissionName,
-      final String actions
+      final String parameters
     ) {
     try {
-      return new GuestPass(className, permissionName, actions);
+      return new GuestPass(className, parameters);
     } catch (ReflectiveOperationException e) {
-      throw new AssertionError("Unable to construct GuestPass", e);
+      throw new AssertionError("Unable to construct GuestPass from "
+        + className + ", " + parameters + ": " + e.getMessage(), e);
     }
   }
 

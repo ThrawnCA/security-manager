@@ -2,6 +2,7 @@ package id.thrawnca.security;
 
 import java.lang.reflect.Constructor;
 import java.security.Permission;
+import java.util.Arrays;
 
 /**
  * A pseudo-permission, recognised only by our custom security manager.
@@ -24,18 +25,24 @@ public final class GuestPass extends Permission {
 
   /**
    * Intended to be called by the JVM when loading from a policy file.
-   * @param className The class name of the real permission.
-   * @param permissionName The permission name of the real permission, if any.
-   * @param actions The actions of the real permission, if any.
+   * @param className The class name of the real permission
+   * @param parameters Any parameters to construct the real permission,
+   * separated by a pipeline |
    * @exception ReflectiveOperationException If the permission
    * cannot be constructed from the given class name and arguments.
    */
-  public GuestPass(final String className,
-                   final String permissionName,
-                   final String actions)
+  public GuestPass(final String className, final String parameters)
       throws ReflectiveOperationException {
+    this(toPermission(className, parameters));
+  }
+
+  /**
+   * Construct a GuestPass for the specified permission.
+   * @param perm The permission to wrap.
+   */
+  public GuestPass(final Permission perm) {
     super("callStackPresence");
-    realPermission = toPermission(className, permissionName, actions);
+    realPermission = perm;
   }
 
   /**
@@ -85,28 +92,27 @@ public final class GuestPass extends Permission {
 
   /**
    * @param className The class name of the permission.
-   * @param permissionName The permission name of the permission, if any.
-   * @param actions The actions of the permission, if any.
+   * @param parameters Parameters to construct the permission, if any,
+   * separated by pipelines |.
    * @return A Permission object representing the specified permission.
    * @exception ReflectiveOperationException If a permission
    * cannot be constructed from the given class name and arguments.
    */
-  protected static Permission toPermission(final String className,
-                                           final String permissionName,
-                                           final String actions)
-    throws ReflectiveOperationException {
+  protected static Permission toPermission(
+      final String className,
+      final String parameters
+    ) throws ReflectiveOperationException {
     final Class<?> permissionClass = Class.forName(className);
     Constructor constructor;
     String[] constructorArgs;
-    if (permissionName == null || permissionName.length() == 0) {
+    if (parameters == null || parameters.length() == 0) {
       constructor = permissionClass.getConstructor();
       constructorArgs = new String[] {};
-    } else if (actions == null || actions.length() == 0) {
-      constructor = permissionClass.getConstructor(String.class);
-      constructorArgs = new String[] {permissionName};
     } else {
-      constructor = permissionClass.getConstructor(String.class, String.class);
-      constructorArgs = new String[] {permissionName, actions};
+      constructorArgs = parameters.split("\\|");
+      final Class[] argTypes = new Class[constructorArgs.length];
+      Arrays.fill(argTypes, String.class);
+      constructor = permissionClass.getConstructor(argTypes);
     }
     return (Permission) constructor.newInstance(constructorArgs);
   }
