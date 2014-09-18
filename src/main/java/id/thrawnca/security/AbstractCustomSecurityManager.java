@@ -218,20 +218,22 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
     public void run() {
       final Iterator<Map.Entry<ProtectionDomain, Set<Permission>>> domains =
         permissionsNeeded.entrySet().iterator();
+      final StringBuilder output = new StringBuilder(1000);
       while (domains.hasNext()) {
         final Map.Entry<ProtectionDomain, Set<Permission>> entry =
           domains.next();
-        System.err.print("grant codeBase \"");
-        System.err.print(entry.getKey().getCodeSource().getLocation());
-        System.err.println("\" {");
+        output.append("grant codeBase \"")
+          .append(entry.getKey().getCodeSource().getLocation())
+          .append("\" {\n");
         final Iterator<Permission> permissions = entry.getValue().iterator();
         while (permissions.hasNext()) {
-          System.err.print("  permission ");
-          System.err.print(permissions.next());
-          System.err.println(';');
+          output.append("  permission ")
+            .append(permissions.next())
+            .append(";\n");
         }
-        System.err.println('}');
+        output.append("}\n");
       }
+      System.err.print(output);
     }
   }
 }
