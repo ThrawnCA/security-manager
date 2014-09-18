@@ -135,13 +135,17 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   /**
    * Handle a security failure, either by logging the required permission,
    * or throwing a security exception, depending on configuration.
-   * @param clazz The class that did not have sufficient permissions.
    * @param perm The permission that was needed.
+   * @param classes The class(es) that did not have sufficient permissions.
    */
-  protected final void handleFailure(final Class clazz,
-                                     final Permission perm) {
+  protected final void handleFailure(
+      final Permission perm,
+      final Class... classes
+    ) {
     if (logMode) {
-      logFailure(ACTOR.getProtectionDomain(clazz), perm);
+      for (int i = 0; i < classes.length; i++) {
+        logFailure(ACTOR.getProtectionDomain(classes[i]), perm);
+      }
     } else {
       throw new SecurityException("access denied: " + perm);
     }

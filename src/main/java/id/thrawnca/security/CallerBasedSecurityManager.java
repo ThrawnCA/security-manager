@@ -32,11 +32,13 @@ public class CallerBasedSecurityManager extends AbstractCustomSecurityManager {
    * @param perm The permission needed.
    */
   @Override
-  protected final void checkPermission(final Class[] callStack,
-                                       final Permission perm) {
+  protected final void checkPermission(
+      final Class[] callStack,
+      final Permission perm
+    ) {
     final Class clazz = getLastCaller(callStack);
     if (clazz != null && !implies(clazz, perm)) {
-      handleFailure(clazz, perm);
+      handleFailure(perm, clazz);
     }
   }
 
