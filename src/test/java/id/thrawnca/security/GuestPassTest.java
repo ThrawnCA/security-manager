@@ -169,6 +169,19 @@ public final class GuestPassTest {
   }
 
   /**
+   * Check that hashCode follows contract.
+   */
+  @Test
+  public void shouldGiveEqualHashCodeForEqualObjects() {
+    final Permission testPermission = new TestPermission("foo", "guest pass");
+    assertEquals(
+      new GuestPass(testPermission).hashCode(),
+      new GuestPass(testPermission).hashCode(),
+      "Equal objects must have equal hashCodes"
+    );
+  }
+
+  /**
    * Construct a GuestPass without throwing checked exceptions.
    * Throw AssertionError instead.
    * @param className The class name of the real permission.
