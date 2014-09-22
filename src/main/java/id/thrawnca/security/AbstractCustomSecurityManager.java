@@ -101,7 +101,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @param callStack The call stack to trim.
    * @return The call stack without the security manager at the start.
    */
-  protected final Class[] trimCallStack(final Class... callStack) {
+  protected final Class[] trimCallStack(final Class<?>... callStack) {
     int startIndex = 0;
     while (callStack[startIndex].isAssignableFrom(getClass())) {
       startIndex++;
