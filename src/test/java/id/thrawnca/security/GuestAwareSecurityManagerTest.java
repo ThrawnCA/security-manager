@@ -16,6 +16,12 @@ import static org.testng.Assert.fail;
 @SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class GuestAwareSecurityManagerTest {
 
+  /** Convenience string for permission name that is granted to tests. */
+  public static final String GRANTED = "granted";
+
+  /** Convenience string for permission name that is not granted to tests. */
+  public static final String NOT_GRANTED = "notGranted";
+
   /**
    * @return Call stacks that should not be granted the specified permissions.
    */
@@ -25,30 +31,30 @@ public final class GuestAwareSecurityManagerTest {
       {
         new Class[] {
           GuestAwareSecurityManagerTest.class
-        }, new TestPermission("wrongReal")
+        }, new TestPermission(NOT_GRANTED, "wrong permission")
       },
       {
         new Class[] {
           GuestAwareSecurityManagerTest.class,
           Test.class
-        }, new TestPermission("guestAndWrongReal")
+        }, new TestPermission(NOT_GRANTED, "guest and wrong permission")
       },
       {
         new Class[] {
           Object.class,
           Test.class
-        }, new TestPermission("guestAndSystem")
+        }, new TestPermission(GRANTED, "guest and system")
       },
       {
         new Class[] {
           Test.class
-        }, new TestPermission("guestOnly")
+        }, new TestPermission(GRANTED, "guest only")
       },
       {
         new Class[] {
           GuestAwareSecurityManagerTest.class,
           GuestAwareSecurityManager.class
-        }, new TestPermission("includeSecurityManagerFurtherUpStack")
+        }, new TestPermission(GRANTED, "security manager on stack")
       },
     };
   }
@@ -62,19 +68,25 @@ public final class GuestAwareSecurityManagerTest {
       {
         new Class[] {
           GuestAwareSecurityManagerTest.class
-        }, new TestPermission("granted")
+        }, new TestPermission(GRANTED, "privileged only")
       },
       {
         new Class[] {
           GuestAwareSecurityManagerTest.class,
           Test.class
-        }, new TestPermission("granted")
+        }, new TestPermission(GRANTED, "privileged and guest")
+      },
+      {
+        new Class[] {
+          Test.class,
+          GuestAwareSecurityManagerTest.class
+        }, new TestPermission(GRANTED, "guest and privileged")
       },
       {
         new Class[] {
           Object.class,
           System.class
-        }, new TestPermission("allSystem")
+        }, new TestPermission(NOT_GRANTED, "all system classes")
       },
     };
   }

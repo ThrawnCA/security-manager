@@ -1,5 +1,5 @@
 grant codeBase "file:${user.home}/.m2/repository/-" {
-	permission id.thrawnca.security.GuestPass "id.thrawnca.security.TestPermission", "*";
+	permission id.thrawnca.security.GuestPass "id.thrawnca.security.TestPermission", "granted|*";
 };
 
 grant codeBase "file:${user.dir}/target/test-classes/-" {
