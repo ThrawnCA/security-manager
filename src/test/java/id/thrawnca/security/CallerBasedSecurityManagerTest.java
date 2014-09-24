@@ -15,7 +15,6 @@ import static org.testng.Assert.fail;
  *
  * @author Carl Antuar
  */
-@SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class CallerBasedSecurityManagerTest {
 
   /** Convenience string for permission name that is granted to tests. */
@@ -23,6 +22,16 @@ public final class CallerBasedSecurityManagerTest {
 
   /** Convenience string for permission name that is not granted to tests. */
   public static final String NOT_GRANTED = "notGranted";
+
+  /** Singleton security manager. */
+  private final CallerBasedSecurityManager manager;
+
+  /**
+   * Construct a singleton security manager for use in tests.
+   */
+  public CallerBasedSecurityManagerTest() {
+    manager = new CallerBasedSecurityManager();
+  }
 
   /**
    * @return Call stacks that should not be granted the specified permissions.
@@ -89,18 +98,18 @@ public final class CallerBasedSecurityManagerTest {
    */
   @Test
   public void shouldDetectLastNonSystemCaller() {
-    final Class<?> manager = CallerBasedSecurityManager.class;
-    final Class<?> test = CallerBasedSecurityManagerTest.class;
-    final Class<?> system = Object.class;
+    final Class<?> managerClass = manager.getClass();
+    final Class<?> testClass = CallerBasedSecurityManagerTest.class;
+    final Class<?> systemClass = Object.class;
     assertSame(
       CallerBasedSecurityManager.getLastCaller(
-        manager,
-        manager,
-        system,
-        manager,
-        test
+        managerClass,
+        managerClass,
+        systemClass,
+        managerClass,
+        testClass
       ),
-      manager,
+      managerClass,
       "Wrong caller identified"
     );
   }
@@ -130,7 +139,7 @@ public final class CallerBasedSecurityManagerTest {
       final Class[] callStack,
       final Permission perm
     ) {
-    new CallerBasedSecurityManager().checkPermission(callStack, perm);
+    manager.checkPermission(callStack, perm);
     fail("Should not have been granted " + perm);
   }
 
@@ -145,7 +154,7 @@ public final class CallerBasedSecurityManagerTest {
       final Permission perm
     ) {
     try {
-      new CallerBasedSecurityManager().checkPermission(callStack, perm);
+      manager.checkPermission(callStack, perm);
     } catch (SecurityException e) {
       fail("Expected permission " + perm + " to be granted");
     }

@@ -15,8 +15,18 @@ import static org.testng.Assert.fail;
  *
  * @author Carl Antuar
  */
-@SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class AbstractCustomSecurityManagerTest {
+
+  /** Sample security manager that always fails. */
+  private final AbstractCustomSecurityManager manager;
+
+  /**
+   * Construct a failing security manager for use in tests
+   * that should not fail.
+   */
+  public AbstractCustomSecurityManagerTest() {
+    manager = new FailingSecurityManager();
+  }
 
   /**
    * Ignore any class that has been granted AllPermission,
@@ -61,7 +71,7 @@ public final class AbstractCustomSecurityManagerTest {
   @Test
   public void shouldTrimSecurityManagerFromCallStack() {
     assertEquals(
-      new FailingSecurityManager().trimCallStack(
+      manager.trimCallStack(
         Object.class,
         SecurityManager.class,
         AbstractCustomSecurityManager.class,

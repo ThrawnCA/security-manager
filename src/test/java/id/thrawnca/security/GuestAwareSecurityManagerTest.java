@@ -13,7 +13,6 @@ import static org.testng.Assert.fail;
  *
  * @author Carl Antuar
  */
-@SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class GuestAwareSecurityManagerTest {
 
   /** Convenience string for permission name that is granted to tests. */
@@ -21,6 +20,16 @@ public final class GuestAwareSecurityManagerTest {
 
   /** Convenience string for permission name that is not granted to tests. */
   public static final String NOT_GRANTED = "notGranted";
+
+  /** Singleton security manager. */
+  private final GuestAwareSecurityManager manager;
+
+  /**
+   * Construct a singleton security manager for use in tests.
+   */
+  public GuestAwareSecurityManagerTest() {
+    manager = new GuestAwareSecurityManager();
+  }
 
   /**
    * @return Call stacks that should not be granted the specified permissions.
@@ -102,8 +111,7 @@ public final class GuestAwareSecurityManagerTest {
       final Class[] callStack,
       final Permission perm
     ) {
-    new GuestAwareSecurityManager()
-      .checkPermission(callStack, perm);
+    manager.checkPermission(callStack, perm);
     fail("Should not have been granted " + perm);
   }
 
@@ -118,7 +126,7 @@ public final class GuestAwareSecurityManagerTest {
       final Permission perm
     ) {
     try {
-      new GuestAwareSecurityManager().checkPermission(callStack, perm);
+      manager.checkPermission(callStack, perm);
     } catch (SecurityException e) {
       fail("Expected permission " + perm + " to be granted");
     }
