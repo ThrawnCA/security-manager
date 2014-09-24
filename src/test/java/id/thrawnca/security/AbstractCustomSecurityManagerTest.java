@@ -112,8 +112,10 @@ public final class AbstractCustomSecurityManagerTest {
      * @param perm The permission being checked.
      */
     @Override
-    protected void checkPermission(final Class[] callStack,
-                                   final Permission perm) {
+    protected void checkPermission(
+        final Permission perm,
+        final Class[] callStack
+      ) {
       handleFailure(perm, callStack);
     }
   }

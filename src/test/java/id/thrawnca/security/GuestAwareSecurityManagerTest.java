@@ -111,7 +111,7 @@ public final class GuestAwareSecurityManagerTest {
       final Class[] callStack,
       final Permission perm
     ) {
-    manager.checkPermission(callStack, perm);
+    manager.checkPermission(perm, callStack);
     fail("Should not have been granted " + perm);
   }
 
@@ -126,7 +126,7 @@ public final class GuestAwareSecurityManagerTest {
       final Permission perm
     ) {
     try {
-      manager.checkPermission(callStack, perm);
+      manager.checkPermission(perm, callStack);
     } catch (SecurityException e) {
       fail("Expected permission " + perm + " to be granted");
     }

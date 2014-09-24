@@ -92,7 +92,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   public final void checkPermission(final Permission perm) {
     final Class[] callStack = getClassContext();
     if (!hasSecurityBypass(callStack)) {
-      checkPermission(trimCallStack(callStack), perm);
+      checkPermission(perm, trimCallStack(callStack));
     }
   }
 
@@ -118,7 +118,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @param callStack The call stack to check.
    * @param perm The permission needed.
    */
-  protected abstract void checkPermission(Class[] callStack, Permission perm);
+  protected abstract void checkPermission(Permission perm, Class... callStack);
 
   /**
    * Use the helper to check the privileges of a class.

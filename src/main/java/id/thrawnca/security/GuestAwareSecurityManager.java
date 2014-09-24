@@ -25,9 +25,10 @@ public final class GuestAwareSecurityManager
   // PMD-Controversial doesn't like what we're doing here,
   // but it's hard to please.
   @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+  @Override
   protected void checkPermission(
-      final Class[] callStack,
-      final Permission perm
+      final Permission perm,
+      final Class... callStack
     ) {
     final Collection<Class> guests = new HashSet<Class>();
     boolean realPresent = false;
