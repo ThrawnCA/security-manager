@@ -1,6 +1,6 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>id.antuar.carl</groupId>
+  <groupId>id.thrawnca</groupId>
   <artifactId>security-manager</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
