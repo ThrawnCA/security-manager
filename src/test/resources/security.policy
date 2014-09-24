@@ -5,6 +5,5 @@ grant codeBase "file:${user.home}/.m2/repository/-" {
 grant codeBase "file:${user.dir}/target/test-classes/-" {
 	permission id.thrawnca.security.TestPermission "granted";
 	permission java.lang.RuntimePermission "setSecurityManager";
-	permission java.util.PropertyPermission "java.*", "read";
 	permission java.util.PropertyPermission "java.security.manager.log_mode", "write";
 };
