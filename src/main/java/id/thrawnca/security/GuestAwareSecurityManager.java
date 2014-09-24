@@ -1,8 +1,8 @@
 package id.thrawnca.security;
 
 import java.security.Permission;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * A security manager implementation that is aware of GuestPass permissions.
@@ -29,7 +29,7 @@ public final class GuestAwareSecurityManager
       final Class[] callStack,
       final Permission perm
     ) {
-    final List<Class> guests = new ArrayList<Class>();
+    final Collection<Class> guests = new HashSet<Class>();
     boolean realPresent = false;
     final GuestPass guestPass = new GuestPass(perm);
     for (int i = 0; i < callStack.length; i++) {
