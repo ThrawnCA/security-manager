@@ -10,12 +10,16 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
- * Ensure, as much as possible, that the CallerBasedSecurityManager
+ * Ensure, as much as possible, that the AbstractCustomSecurityManager
  * algorithms are correct.
  *
  * @author Carl Antuar
  */
 public final class AbstractCustomSecurityManagerTest {
+
+  /** The only thing the failing security manager allows is its replacement. */
+  public static final Permission SET_SECURITY =
+    new RuntimePermission("setSecurityManager");
 
   /** Sample security manager that always fails. */
   private final AbstractCustomSecurityManager manager;
@@ -52,12 +56,11 @@ public final class AbstractCustomSecurityManagerTest {
    */
   @Test
   public void shouldBypassSecurityToCheckPermissions() {
-    System.setSecurityManager(new CallerBasedSecurityManager());
+    System.setSecurityManager(manager);
     try {
       assertFalse(
-        AbstractCustomSecurityManager.implies(
-          getClass(), CallerBasedSecurityManager.ALL_PERM
-        ), "Test should not have AllPermission"
+        manager.implies(getClass(), AbstractCustomSecurityManager.ALL_PERM),
+        "Test should not have AllPermission"
       );
     } finally {
       System.setSecurityManager(null);
@@ -88,24 +91,54 @@ public final class AbstractCustomSecurityManagerTest {
    */
   @Test
   public void shouldNotThrowSecurityExceptionInLogMode() {
+    System.setProperty(AbstractCustomSecurityManager.LOG_PROPERTY, "true");
+    final SecurityManager newManager = new FailingSecurityManager();
     try {
-      System.setProperty(CallerBasedSecurityManager.LOG_PROPERTY, "true");
-      new FailingSecurityManager()
-        .checkPermission(AbstractCustomSecurityManager.ALL_PERM);
+      System.setSecurityManager(newManager);
+      newManager.checkPermission(AbstractCustomSecurityManager.ALL_PERM);
     } catch (SecurityException e) {
       fail("Should not have thrown exception in log mode", e);
     } finally {
+      System.setSecurityManager(null);
       System.clearProperty(AbstractCustomSecurityManager.LOG_PROPERTY);
     }
+  }
 
+  /**
+   * Ensure that exception is not thrown for permission we don't have
+   * when the security manager is not installed.
+   */
+  @Test
+  public void shouldNotThrowSecurityExceptionWhenNotInstalled() {
+    try {
+      manager.checkPermission(AbstractCustomSecurityManager.ALL_PERM);
+    } catch (SecurityException e) {
+      fail("Should not have thrown security exception when not installed");
+    }
+  }
+
+  /**
+   * Ensure that exception is thrown for permission we don't have
+   * when the security manager is properly installed.
+   */
+  @Test(expectedExceptions = SecurityException.class)
+  public void shouldThrowSecurityExceptionWhenInstalled() {
+    System.setSecurityManager(manager);
+    try {
+      manager.checkPermission(AbstractCustomSecurityManager.ALL_PERM);
+      fail("Should not have granted AllPermission when installed");
+    } finally {
+      System.setSecurityManager(null);
+    }
   }
 
   /**
    * Test security manager that always fails.
    * @author Carl Antuar
    */
-  private static final class FailingSecurityManager
+  public static final class FailingSecurityManager
     extends AbstractCustomSecurityManager {
+
     /**
      * Calls the handleFailure method with the whole call stack.
      * @param callStack The call stack to check.
@@ -116,7 +149,9 @@ public final class AbstractCustomSecurityManagerTest {
         final Permission perm,
         final Class[] callStack
       ) {
-      handleFailure(perm, callStack);
+      if (!SET_SECURITY.equals(perm)) {
+        handleFailure(perm, callStack);
+      }
     }
   }
 

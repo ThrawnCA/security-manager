@@ -90,9 +90,11 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @param perm The permission that is being sought.
    */
   public final void checkPermission(final Permission perm) {
-    final Class[] callStack = getClassContext();
-    if (!hasSecurityBypass(callStack)) {
-      checkPermission(perm, trimCallStack(callStack));
+    if (this == System.getSecurityManager()) {
+      final Class[] callStack = getClassContext();
+      if (!hasSecurityBypass(callStack)) {
+        checkPermission(perm, trimCallStack(callStack));
+      }
     }
   }
 
@@ -127,8 +129,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @return TRUE iff the class holds 'perm',
    * or holds a permission that implies 'perm'.
    */
-  protected static boolean implies(final Class clazz,
-                                   final Permission perm) {
+  protected final boolean implies(final Class clazz, final Permission perm) {
     return ACTOR.implies(clazz, perm);
   }
 

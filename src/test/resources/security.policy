@@ -1,4 +1,5 @@
 grant codeBase "file:${user.home}/.m2/repository/-" {
+	permission id.thrawnca.security.GuestPass "java.lang.RuntimePermission", "setSecurityManager";
 	permission id.thrawnca.security.GuestPass "id.thrawnca.security.TestPermission", "granted|*";
 };
 
