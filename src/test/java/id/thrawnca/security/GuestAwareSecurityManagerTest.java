@@ -1,10 +1,12 @@
 package id.thrawnca.security;
 
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.security.Permission;
 
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -29,6 +31,36 @@ public final class GuestAwareSecurityManagerTest {
    */
   public GuestAwareSecurityManagerTest() {
     manager = new GuestAwareSecurityManager();
+  }
+
+  /**
+   * Ensure that the permission system has been loaded properly.
+   */
+  @BeforeClass
+  public void ensureSetUp() {
+    assertTrue(
+      manager.implies(
+        GuestAwareSecurityManagerTest.class, new TestPermission(GRANTED)
+      ), "Test permission 'granted' not loaded correctly"
+    );
+    assertTrue(
+      manager.implies(
+        GuestAwareSecurityManagerTest.class,
+        AbstractCustomSecurityManagerTest.SET_SECURITY
+      ), "'Set security manager' permission not loaded correctly"
+    );
+    assertTrue(
+      manager.implies(
+        Test.class,
+        new GuestPass(new TestPermission(GRANTED))
+      ), "Guest pass for test permission not loaded correctly"
+    );
+    assertTrue(
+      manager.implies(
+        Test.class,
+        new GuestPass(AbstractCustomSecurityManagerTest.SET_SECURITY)
+      ), "Guest pass for 'Set security manager' permission not loaded correctly"
+    );
   }
 
   /**
@@ -128,7 +160,7 @@ public final class GuestAwareSecurityManagerTest {
     try {
       manager.checkPermission(perm, callStack);
     } catch (SecurityException e) {
-      fail("Expected permission " + perm + " to be granted");
+      fail("Expected " + perm + " to be granted, but instead threw " + e);
     }
   }
 
