@@ -2,7 +2,6 @@ package id.thrawnca.security;
 
 import java.lang.reflect.Constructor;
 import java.security.Permission;
-import java.security.BasicPermission;
 import java.util.Arrays;
 
 /**
@@ -13,7 +12,7 @@ import java.util.Arrays;
  * that holds the real version of the wrapped permission.
  * @author Carl Antuar
  */
-public final class GuestPass extends BasicPermission {
+public final class GuestPass extends Permission {
 
   /** Serialization ID - might not be needed. */
   private static final long serialVersionUID = 20140910L;
@@ -51,6 +50,13 @@ public final class GuestPass extends BasicPermission {
    */
   protected Permission getPermission() {
     return realPermission;
+  }
+
+  /**
+   * @return Empty string; GuestPass has no actions of its own.
+   */
+  public String getActions() {
+    return "";
   }
 
   /**
