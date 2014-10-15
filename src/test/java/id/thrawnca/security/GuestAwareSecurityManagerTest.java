@@ -39,27 +39,24 @@ public final class GuestAwareSecurityManagerTest {
   @BeforeClass
   public void ensureSetUp() {
     assertTrue(
-      manager.implies(
-        GuestAwareSecurityManagerTest.class, new TestPermission(GRANTED)
+      GuestAwareSecurityManagerTest.class.getProtectionDomain().implies(
+        new TestPermission(GRANTED)
       ), "Test permission 'granted' not loaded correctly"
     );
     assertTrue(
-      manager.implies(
-        GuestAwareSecurityManagerTest.class,
+      GuestAwareSecurityManagerTest.class.getProtectionDomain().implies(
         AbstractCustomSecurityManagerTest.SET_SECURITY
-      ), "'Set security manager' permission not loaded correctly"
+      ), "'setSecurityManager' permission not loaded correctly"
     );
     assertTrue(
-      manager.implies(
-        Test.class,
+      Test.class.getProtectionDomain().implies(
         new GuestPass(new TestPermission(GRANTED))
       ), "Guest pass for test permission not loaded correctly"
     );
     assertTrue(
-      manager.implies(
-        Test.class,
+      Test.class.getProtectionDomain().implies(
         new GuestPass(AbstractCustomSecurityManagerTest.SET_SECURITY)
-      ), "Guest pass for 'Set security manager' permission not loaded correctly"
+      ), "Guest pass for 'setSecurityManager' permission not loaded correctly"
     );
   }
 

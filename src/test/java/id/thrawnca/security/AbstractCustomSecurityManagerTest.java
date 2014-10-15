@@ -52,22 +52,6 @@ public final class AbstractCustomSecurityManagerTest {
   }
 
   /**
-   * Check the security bypass for privileged code.
-   */
-  @Test
-  public void shouldBypassSecurityToCheckPermissions() {
-    System.setSecurityManager(manager);
-    try {
-      assertFalse(
-        manager.implies(getClass(), AbstractCustomSecurityManager.ALL_PERM),
-        "Test should not have AllPermission"
-      );
-    } finally {
-      System.setSecurityManager(null);
-    }
-  }
-
-  /**
    * Check that the security manager itself
    * is stripped from the call stack.
    */
