@@ -100,6 +100,25 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.pitest</groupId><artifactId>classycle-maven-plugin</artifactId><version>0.4</version>
+        <configuration>
+          <dependencyDefinition>
+            show allResults
+            check absenceOfClassCycles > 1 in *
+            check absenceOfPackageCycles > 1 in *
+          </dependencyDefinition>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>analyse</goal>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId><artifactId>findbugs-maven-plugin</artifactId><version>3.0.0</version>
         <configuration>
           <includeTests>true</includeTests>
