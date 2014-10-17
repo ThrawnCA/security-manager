@@ -1,5 +1,6 @@
 package id.thrawnca.security;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,7 +65,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @return TRUE if the specified class holds AllPermission; otherwise FALSE.
    */
   protected static boolean isSystemClass(final Class clazz) {
-    return ACTOR.implies(clazz, ALL_PERM);
+    return ACTOR.getProtectionDomain(clazz).implies(ALL_PERM);
   }
 
   /**
@@ -75,7 +76,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    */
   protected final boolean hasSecurityBypass(final Class... callStack) {
     boolean bypass = false;
-    for (int i = 2; !bypass && i < callStack.length; i++) {
+    for (int i = 1; !bypass && i < callStack.length; i++) {
       if (callStack[i] == PrivilegedActor.class) {
         bypass = true;
       }
@@ -91,9 +92,9 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    */
   public final void checkPermission(final Permission perm) {
     if (this == System.getSecurityManager()) {
-      final Class[] callStack = getClassContext();
+      final Class[] callStack = trimCallStack(getClassContext());
       if (!hasSecurityBypass(callStack)) {
-        checkPermission(perm, trimCallStack(callStack));
+        checkPermissionForContext(perm, callStack, getDomains(callStack));
       }
     }
   }
@@ -116,22 +117,34 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   }
 
   /**
-   * Checks the call stack against the specified permission.
-   * @param callStack The call stack to check.
-   * @param perm The permission needed.
+   * Retrieves the protection domains for the specified classes
+   * using the privileged actor. These should only be given to trusted code.
+   * @param classes The classes to retrieve protection domains for.
+   * @return The protection domains for the specified list of classes.
    */
-  protected abstract void checkPermission(Permission perm, Class... callStack);
+  // returned map is unmodifiable
+  @SuppressWarnings("PMD.UseConcurrentHashMap")
+  private Map<Class, ProtectionDomain> getDomains(final Class... classes) {
+    final Map<Class, ProtectionDomain> domains =
+      new HashMap<Class, ProtectionDomain>(classes.length);
+    for (int i = 0; i < classes.length; i++) {
+      if (!domains.containsKey(classes[i])) {
+        domains.put(classes[i], ACTOR.getProtectionDomain(classes[i]));
+      }
+    }
+    return Collections.unmodifiableMap(domains);
+  }
 
   /**
-   * Use the helper to check the privileges of a class.
-   * @param clazz The class we are checking.
-   * @param perm The permission that we are checking for.
-   * @return TRUE iff the class holds 'perm',
-   * or holds a permission that implies 'perm'.
+   * Checks the call stack against the specified permission.
+   * @param perm The permission needed.
+   * @param callStack The call stack to check.
+   * @param protectionDomains The protection domains for the call stack.
    */
-  protected final boolean implies(final Class clazz, final Permission perm) {
-    return ACTOR.implies(clazz, perm);
-  }
+  protected abstract void checkPermissionForContext(
+      Permission perm,
+      Class[] callStack,
+      Map<Class, ProtectionDomain> protectionDomains);
 
   /**
    * Handle a security failure, either by logging the required permission,
@@ -180,16 +193,6 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
       return clazz.getProtectionDomain();
     }
 
-    /**
-     * @param clazz The class we are checking.
-     * @param perm The permission that we are checking for.
-     * @return TRUE if the class holds 'perm',
-     * or holds a permission that implies 'perm'; otherwise FALSE.
-     */
-    protected boolean implies(final Class clazz,
-                           final Permission perm) {
-      return clazz.getProtectionDomain().implies(perm);
-    }
   }
 
   /**

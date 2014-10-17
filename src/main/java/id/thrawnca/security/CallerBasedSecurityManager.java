@@ -1,6 +1,8 @@
 package id.thrawnca.security;
 
 import java.security.Permission;
+import java.security.ProtectionDomain;
+import java.util.Map;
 
 /**
  * This SecurityManager checks the most recent non-system class
@@ -28,16 +30,17 @@ public class CallerBasedSecurityManager extends AbstractCustomSecurityManager {
   /**
    * Checks whether the most recent non-system class on the stack
    * has the specified permission.
-   * @param callStack The call stack to check.
    * @param perm The permission needed.
+   * @param callStack The call stack to check.
+   * @param protectionDomains The protection domains for the call stack.
    */
   @Override
-  protected final void checkPermission(
+  protected final void checkPermissionForContext(
       final Permission perm,
-      final Class... callStack
-    ) {
+      final Class[] callStack,
+      final Map<Class, ProtectionDomain> protectionDomains) {
     final Class clazz = getLastCaller(callStack);
-    if (clazz != null && !implies(clazz, perm)) {
+    if (clazz != null && !protectionDomains.get(clazz).implies(perm)) {
       handleFailure(perm, clazz);
     }
   }

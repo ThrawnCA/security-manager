@@ -139,7 +139,8 @@ public final class CallerBasedSecurityManagerTest {
       final Class[] callStack,
       final Permission perm
     ) {
-    manager.checkPermission(perm, callStack);
+    manager.checkPermissionForContext(perm, callStack,
+      AbstractCustomSecurityManagerTest.getDomains(callStack));
     fail("Should not have been granted " + perm);
   }
 
@@ -151,10 +152,10 @@ public final class CallerBasedSecurityManagerTest {
   @Test(dataProvider = "privileged")
   public void shouldNotThrowSecurityExceptionForPrivilegedCode(
       final Class[] callStack,
-      final Permission perm
-    ) {
+      final Permission perm) {
     try {
-      manager.checkPermission(perm, callStack);
+      manager.checkPermissionForContext(perm, callStack,
+        AbstractCustomSecurityManagerTest.getDomains(callStack));
     } catch (SecurityException e) {
       fail("Expected permission " + perm + " to be granted");
     }

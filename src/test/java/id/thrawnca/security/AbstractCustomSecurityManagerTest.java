@@ -3,6 +3,10 @@ package id.thrawnca.security;
 import org.testng.annotations.Test;
 
 import java.security.Permission;
+import java.security.ProtectionDomain;
+import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -30,6 +34,27 @@ public final class AbstractCustomSecurityManagerTest {
    */
   public AbstractCustomSecurityManagerTest() {
     manager = new FailingSecurityManager();
+  }
+
+  /**
+   * Convenience method to assemble the map of protection domains.
+   * NB This method is not privileged.
+   * @param classes The classes needed for testing.
+   * @return The protection domains for the test classes.
+   */
+  // returned map is unmodifiable
+  @SuppressWarnings("PMD.UseConcurrentHashMap")
+  public static Map<Class, ProtectionDomain> getDomains(
+      final Class... classes) {
+    final Map<Class, ProtectionDomain> domains =
+      new HashMap<Class, ProtectionDomain>(classes.length);
+    for (int i = 0; i < classes.length; i++) {
+      domains.put(
+        classes[i],
+        classes[i].getProtectionDomain()
+      );
+    }
+    return Collections.unmodifiableMap(domains);
   }
 
   /**
@@ -124,15 +149,17 @@ public final class AbstractCustomSecurityManagerTest {
     extends AbstractCustomSecurityManager {
 
     /**
-     * Calls the handleFailure method with the whole call stack.
-     * @param callStack The call stack to check.
+     * Calls the handleFailure method with the whole call stack,
+     * except when replacing/removing the security manager.
      * @param perm The permission being checked.
+     * @param callStack The call stack to check.
+     * @param protectionDomains The protection domains for the call stack.
      */
     @Override
-    protected void checkPermission(
+    protected void checkPermissionForContext(
         final Permission perm,
-        final Class[] callStack
-      ) {
+        final Class[] callStack,
+        final Map<Class, ProtectionDomain> protectionDomains) {
       if (!SET_SECURITY.equals(perm)) {
         handleFailure(perm, callStack);
       }
