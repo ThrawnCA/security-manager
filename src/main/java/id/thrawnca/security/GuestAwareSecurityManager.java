@@ -13,6 +13,7 @@ import java.util.HashSet;
  * holding the real permission.
  * @author Carl Antuar
  */
+// this class provides only a function
 @SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class GuestAwareSecurityManager
   extends AbstractCustomSecurityManager {
