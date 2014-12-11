@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.security.Permission;
 import java.security.AllPermission;
+import java.security.Permission;
 import java.security.ProtectionDomain;
 
 /**
@@ -31,7 +31,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
 
   /**
    * This is determined by the presence of the system property
-   * 'java.security.manager.log_mode'.
+   * 'thrawnca.security.manager.log_mode'.
    * If present, then security violations will result in a log of the
    * requested permission, in a suitable format for copying into a
    * policy file, instead of an exception.
@@ -65,7 +65,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @return TRUE if the specified class holds AllPermission; otherwise FALSE.
    */
   protected static boolean isSystemClass(final Class clazz) {
-    return ACTOR.getProtectionDomain(clazz).implies(ALL_PERM);
+    return ACTOR.implies(ACTOR.getProtectionDomain(clazz), ALL_PERM);
   }
 
   /**
@@ -74,7 +74,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
    * @param callStack The call stack to examine.
    * @return TRUE iff the call stack includes the privileged helper.
    */
-  protected final boolean hasSecurityBypass(final Class... callStack) {
+  private boolean hasSecurityBypass(final Class... callStack) {
     boolean bypass = false;
     for (int i = 1; !bypass && i < callStack.length; i++) {
       if (callStack[i] == PrivilegedActor.class) {
@@ -85,8 +85,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   }
 
   /**
-   * Checks whether the most recent non-system class on the stack
-   * has the specified permission.
+   * Checks whether the current call stack has the specified permission.
    * Throws a SecurityException if the permission is not granted.
    * @param perm The permission that is being sought.
    */
@@ -100,7 +99,41 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
   }
 
   /**
+   * Checks whether the supplied security context has the specified permission.
+   * Throws a SecurityException if the permission is not granted.
+   * @param perm The permission that is being sought.
+   * @param context The security context seeking the permission.
+   */
+  public final void checkPermission(
+      final Permission perm,
+      final Object context) {
+    if (this == System.getSecurityManager()) {
+      if (!(context instanceof SecurityContext)) {
+        throw new SecurityException("Wrong security context type: " + context);
+      }
+      final SecurityContext securityContext = (SecurityContext) context;
+      final Class[] callStack = ACTOR.getClassContext(securityContext);
+      if (!hasSecurityBypass(callStack)) {
+        checkPermissionForContext(
+          perm,
+          callStack,
+          ACTOR.getDomains(securityContext)
+        );
+      }
+    }
+  }
+
+  /**
+   * @return An object that encapsulates the current security environment.
+   */
+  public final Object getSecurityContext() {
+    final Class[] callStack = trimCallStack(getClassContext());
+    return new SecurityContext(callStack, getDomains(callStack));
+  }
+
+  /**
    * Trim the security manager off the start of the call stack.
+   * NB This includes parents of the runtime type of the security manager.
    * @param callStack The call stack to trim.
    * @return The call stack without the security manager at the start.
    */
@@ -191,6 +224,35 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
      */
     protected ProtectionDomain getProtectionDomain(final Class clazz) {
       return clazz.getProtectionDomain();
+    }
+
+    /**
+     * This needs to be privileged in case we need to read the policy file(s).
+     * @param domain The protection domain we want to check.
+     * @param perm The permission we are checking for.
+     * @return Whether the protection domain implies the permission.
+     */
+    protected boolean implies(
+        final ProtectionDomain domain,
+        final Permission perm) {
+      return domain.implies(perm);
+    }
+
+    /**
+     * @param context The security context to unpack.
+     * @return The call stack from the context.
+     */
+    protected Class[] getClassContext(final SecurityContext context) {
+      return context.getClassContext();
+    }
+
+    /**
+     * @param context The security context to unpack.
+     * @return The protection domains from the context.
+     */
+    protected Map<Class, ProtectionDomain> getDomains(
+        final SecurityContext context) {
+      return context.getProtectionDomains();
     }
 
   }

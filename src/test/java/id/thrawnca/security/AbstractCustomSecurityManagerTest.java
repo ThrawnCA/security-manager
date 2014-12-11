@@ -4,9 +4,7 @@ import org.testng.annotations.Test;
 
 import java.security.Permission;
 import java.security.ProtectionDomain;
-import java.util.Collections;
 import java.util.Map;
-import java.util.HashMap;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -21,7 +19,7 @@ import static org.testng.Assert.fail;
  */
 public final class AbstractCustomSecurityManagerTest {
 
-  /** The only thing the failing security manager allows is its replacement. */
+  /** The permission needed to replace the security manager. */
   public static final Permission SET_SECURITY =
     new RuntimePermission("setSecurityManager");
 
@@ -34,27 +32,6 @@ public final class AbstractCustomSecurityManagerTest {
    */
   public AbstractCustomSecurityManagerTest() {
     manager = new FailingSecurityManager();
-  }
-
-  /**
-   * Convenience method to assemble the map of protection domains.
-   * NB This method is not privileged.
-   * @param classes The classes needed for testing.
-   * @return The protection domains for the test classes.
-   */
-  // returned map is unmodifiable
-  @SuppressWarnings("PMD.UseConcurrentHashMap")
-  public static Map<Class, ProtectionDomain> getDomains(
-      final Class... classes) {
-    final Map<Class, ProtectionDomain> domains =
-      new HashMap<Class, ProtectionDomain>(classes.length);
-    for (int i = 0; i < classes.length; i++) {
-      domains.put(
-        classes[i],
-        classes[i].getProtectionDomain()
-      );
-    }
-    return Collections.unmodifiableMap(domains);
   }
 
   /**
@@ -130,14 +107,71 @@ public final class AbstractCustomSecurityManagerTest {
    * Ensure that exception is thrown for permission we don't have
    * when the security manager is properly installed.
    */
-  @Test(expectedExceptions = SecurityException.class)
+  @Test
   public void shouldThrowSecurityExceptionWhenInstalled() {
     System.setSecurityManager(manager);
     try {
       manager.checkPermission(AbstractCustomSecurityManager.ALL_PERM);
       fail("Should not have granted AllPermission when installed");
+    } catch (SecurityException e) {
+      assertTrue(e.getMessage().contains("access denied"),
+        "Expected 'access denied' but instead saw: " + e.getMessage()
+      );
     } finally {
       System.setSecurityManager(null);
+    }
+  }
+
+  // Tests with SecurityContext
+
+  /**
+   * Ensure that exception is not thrown for permission we don't have
+   * when called with a security context
+   * and the security manager is not installed.
+   */
+  @Test
+  public void shouldNotThrowSecurityExceptionWithContextWhenNotInstalled() {
+    try {
+      manager.checkPermission(
+        AbstractCustomSecurityManager.ALL_PERM,
+        SecurityManagerPermissionsTest.getSecurityContext(getClass())
+      );
+    } catch (SecurityException e) {
+      fail("Should not have thrown security exception when not installed");
+    }
+  }
+
+  /**
+   * Ensure that a security exception is thrown
+   * when the security manager is installed
+   * and we are using a security context of the wrong type.
+   */
+  @Test
+  public void shouldThrowExceptionForWrongContextTypeWhenInstalled() {
+    System.setSecurityManager(manager);
+    try {
+      manager.checkPermission(new TestPermission("granted"), new Object());
+      fail("Should not have granted permission for invalid security context");
+    } catch (SecurityException e) {
+      assertTrue(e.getMessage().contains("Wrong security context type"),
+        "Expected 'wrong type' but instead saw: " + e.getMessage()
+      );
+    } finally {
+      System.setSecurityManager(null);
+    }
+  }
+
+  /**
+   * Ensure that a security exception is not thrown
+   * when the security manager is not installed
+   * even if we are using a security context of the wrong type.
+   */
+  @Test
+  public void shouldNotThrowExceptionForWrongContextTypeWhenNotInstalled() {
+    try {
+      manager.checkPermission(new TestPermission("granted"), new Object());
+    } catch (SecurityException e) {
+      fail("Should not have thrown security exception when not installed");
     }
   }
 
@@ -147,6 +181,13 @@ public final class AbstractCustomSecurityManagerTest {
    */
   public static final class FailingSecurityManager
     extends AbstractCustomSecurityManager {
+
+    /**
+     * The permission needed to replace/remove the security manager.
+     * This is a reference to the instance in the outer class
+     * in order to ensure that the outer class file is loaded eagerly.
+     */
+    private static final Permission ALLOWED_PERM = SET_SECURITY;
 
     /**
      * Calls the handleFailure method with the whole call stack,
@@ -160,7 +201,7 @@ public final class AbstractCustomSecurityManagerTest {
         final Permission perm,
         final Class[] callStack,
         final Map<Class, ProtectionDomain> protectionDomains) {
-      if (!SET_SECURITY.equals(perm)) {
+      if (!ALLOWED_PERM.equals(perm)) {
         handleFailure(perm, callStack);
       }
     }
