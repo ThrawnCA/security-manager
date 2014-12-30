@@ -8,9 +8,7 @@ import java.security.AllPermission;
 import java.security.Permission;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertTrue;
 
 /**
  * Ensure that the GuestPass pseudo-permission correctly interacts
@@ -21,9 +19,6 @@ import static org.testng.Assert.assertTrue;
 @SuppressWarnings("PMD.AtLeastOneConstructor")
 public final class GuestPassTest {
 
-  /** 'Set I/O' action for RuntimePermission. */
-  private static final String SET_IO = "setIO";
-
   /** Read action for FilePermission. */
   private static final String READ = "read";
 
@@ -32,25 +27,6 @@ public final class GuestPassTest {
 
   /** Test file location. */
   private static final String TEST_FILE = "target/foo";
-
-  /**
-   * @return Permission parameters and expected results.
-   */
-  @DataProvider
-  public Object[][] permissionParams() {
-    return new Object[][] {
-      {AllPermission.class.getName(), null,
-        AbstractCustomSecurityManager.ALL_PERM },
-      {AllPermission.class.getName(), "",
-        AbstractCustomSecurityManager.ALL_PERM },
-      {RuntimePermission.class.getName(), SET_IO,
-        new RuntimePermission(SET_IO) },
-      {RuntimePermission.class.getName(), SET_IO,
-        new RuntimePermission(SET_IO) },
-      {FilePermission.class.getName(), TEST_FILE + '|' + READ_WRITE,
-        new FilePermission(TEST_FILE, READ_WRITE) },
-    };
-  }
 
   /**
    * @return Permissions for implication comparison.
@@ -63,6 +39,9 @@ public final class GuestPassTest {
 
     return new Object[][] {
       {guestPass, new FilePermission(TEST_FILE, READ), Boolean.FALSE },
+      {guestPass,
+        new TestPermission(GuestPass.PERMISSION_NAME),
+        Boolean.FALSE },
       {guestPass,
         makeGuestPass(FilePermission.class.getName(),
           TEST_FILE + "-baz" + '|' + READ),
@@ -90,26 +69,13 @@ public final class GuestPassTest {
           TEST_FILE + '|' + READ_WRITE),
         Boolean.FALSE },
       {guestPass, new AllPermission(), Boolean.FALSE },
+      {guestPass,
+        new TestPermission(GuestPass.PERMISSION_NAME),
+        Boolean.FALSE },
+      {guestPass,
+        new Object(),
+        Boolean.FALSE },
     };
-  }
-
-  /**
-   * Ensure that string parameters result in the expected permission.
-   * @param className The class of the real permission.
-   * @param parameters Any parameters to construct the permission.
-   * @param expected The real permission that should result.
-   */
-  @Test(dataProvider = "permissionParams")
-  public void shouldLoadSpecifiedPermissions(
-      final String className,
-      final String parameters,
-      final Permission expected
-    ) {
-    assertEquals(
-      makeGuestPass(className, parameters).getPermission(),
-      expected,
-      "Permission not correctly loaded"
-    );
   }
 
   /**
@@ -125,23 +91,23 @@ public final class GuestPassTest {
       final Permission other,
       final boolean shouldImply
     ) {
-    if (shouldImply) {
-      assertTrue(guestPass.implies(other), guestPass + " implies " + other);
-    } else {
-      assertFalse(guestPass.implies(other), guestPass + " implies " + other);
-    }
+    assertEquals(
+      guestPass.implies(other),
+      shouldImply,
+      guestPass + " implies " + other
+    );
   }
 
   /**
    * Ensure that GuestPass equals only other GuestPass for the same permission.
    * @param guestPass Guest pass for comparison.
-   * @param other Permission that may or may not be equal to 'guestPass'.
+   * @param other Object that may or may not be equal to 'guestPass'.
    * @param shouldMatch Whether we expect 'guestPass' to equal 'other'.
    */
   @Test(dataProvider = "equalPermissions")
   public void shouldEqualGuestPassForSamePermission(
       final GuestPass guestPass,
-      final Permission other,
+      final Object other,
       final boolean shouldMatch
     ) {
     if (shouldMatch) {
@@ -154,21 +120,6 @@ public final class GuestPassTest {
   }
 
   /**
-   * Verify that toString looks the way we expect.
-   */
-  @Test
-  public void shouldRenderToStringIncludingRealPermission() {
-    assertEquals(
-      makeGuestPass(
-        FilePermission.class.getName(), TEST_FILE + '|' + READ_WRITE
-      ).toString(),
-      "(\"id.thrawnca.security.GuestPass\" "
-      + "(\"java.io.FilePermission\" \"target/foo\" \"read,write\"))"
-      , "Incorrect toString output"
-    );
-  }
-
-  /**
    * Check that hashCode follows contract.
    */
   @Test
@@ -178,6 +129,20 @@ public final class GuestPassTest {
       new GuestPass(testPermission).hashCode(),
       new GuestPass(testPermission).hashCode(),
       "Equal objects must have equal hashCodes"
+    );
+  }
+
+  /**
+   * Ensure that guest passes have no actions of their own.
+   */
+  @Test
+  public void shouldHaveNoActions() {
+    assertEquals(
+      makeGuestPass(
+        FilePermission.class.getName(), TEST_FILE + '|' + READ
+      ).getActions(),
+      "",
+      "Guest passes should not have any actions of their own"
     );
   }
 

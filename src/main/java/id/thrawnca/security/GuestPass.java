@@ -1,8 +1,6 @@
 package id.thrawnca.security;
 
-import java.lang.reflect.Constructor;
 import java.security.Permission;
-import java.util.Arrays;
 
 /**
  * A pseudo-permission, recognised only by our custom security manager.
@@ -12,16 +10,13 @@ import java.util.Arrays;
  * that holds the real version of the wrapped permission.
  * @author Carl Antuar
  */
-public final class GuestPass extends Permission {
+public final class GuestPass extends AbstractPermissionWrapper {
+
+  /** The permission name used by guest passes. */
+  public static final String PERMISSION_NAME = "callStackPresence";
 
   /** Serialization ID - might not be needed. */
-  private static final long serialVersionUID = 20140910L;
-
-  /**
-   * The real permission, for which the holder of this GuestPass
-   * is allowed to be present.
-   */
-  private final Permission realPermission;
+  private static final long serialVersionUID = 20141224L;
 
   /**
    * Intended to be called by the JVM when loading from a policy file.
@@ -41,20 +36,13 @@ public final class GuestPass extends Permission {
    * @param perm The permission to wrap.
    */
   public GuestPass(final Permission perm) {
-    super("callStackPresence");
-    realPermission = perm;
-  }
-
-  /**
-   * @return The real permission wrapped by this GuestPass.
-   */
-  protected Permission getPermission() {
-    return realPermission;
+    super(PERMISSION_NAME, perm);
   }
 
   /**
    * @return Empty string; GuestPass has no actions of its own.
    */
+  @Override
   public String getActions() {
     return "";
   }
@@ -63,11 +51,17 @@ public final class GuestPass extends Permission {
    * @param permission The permission for which we are seeking.
    * @return TRUE iff 'permission' is a GuestPass whose wrapped permission
    * is implied by this GuestPass' wrapped permission.
+   * NB This will not work properly with java.security.Permissions.
    */
   @Override
   public boolean implies(final Permission permission) {
-    return permission instanceof GuestPass
-      && realPermission.implies(((GuestPass) permission).realPermission);
+    /*
+     * Problems here. java.security.Permissions keeps a map of runtime classes
+     * to permission collections, and only checks the collection to determine
+     * whether a permission is implied. So a GuestPass
+     * can never successfully imply a different type of permission wrapper.
+     */
+    return getName().equals(permission.getName()) && wrappedImplies(permission);
   }
 
   /**
@@ -77,8 +71,7 @@ public final class GuestPass extends Permission {
    */
   @Override
   public boolean equals(final Object other) {
-    return other instanceof GuestPass
-      && realPermission.equals(((GuestPass) other).realPermission);
+    return other instanceof GuestPass && wrappedEquals(other);
   }
 
   /**
@@ -86,48 +79,7 @@ public final class GuestPass extends Permission {
    */
   @Override
   public int hashCode() {
-    return realPermission.hashCode();
-  }
-
-  /**
-   * @param className The class name of the permission.
-   * @param parameters Parameters to construct the permission, if any,
-   * separated by pipelines |.
-   * @return A Permission object representing the specified permission.
-   * @exception ReflectiveOperationException If a permission
-   * cannot be constructed from the given class name and arguments.
-   */
-  protected static Permission toPermission(
-      final String className,
-      final String parameters
-    ) throws ReflectiveOperationException {
-    final Class<?> permissionClass = Class.forName(className);
-    Constructor constructor;
-    String[] constructorArgs;
-    if (parameters == null || parameters.length() == 0) {
-      constructor = permissionClass.getConstructor();
-      constructorArgs = new String[] {};
-    } else {
-      constructorArgs = parameters.split("\\|");
-      final Class[] argTypes = new Class[constructorArgs.length];
-      Arrays.fill(argTypes, String.class);
-      constructor = permissionClass.getConstructor(argTypes);
-    }
-    return (Permission) constructor.newInstance(constructorArgs);
-  }
-
-  /**
-   * @return String representation of this GuestPass,
-   * including the real permission it stands for.
-   */
-  @Override
-  public String toString() {
-    return new StringBuilder("(\"")
-      .append(getClass().getName())
-      .append("\" ")
-      .append(realPermission)
-      .append(')')
-      .toString();
+    return getPermission().hashCode();
   }
 
 }
