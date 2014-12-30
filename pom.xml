@@ -15,7 +15,7 @@
   </properties>
 
   <dependencies>
-    <dependency><scope>test</scope><groupId>org.testng</groupId><artifactId>testng</artifactId><version>6.8.8</version></dependency>
+    <dependency><scope>test</scope><groupId>org.testng</groupId><artifactId>testng</artifactId><version>6.8.13</version></dependency>
   </dependencies>
 
   <build>
