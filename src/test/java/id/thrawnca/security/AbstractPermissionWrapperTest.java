@@ -89,6 +89,26 @@ public final class AbstractPermissionWrapperTest {
   }
 
   /**
+   * Ensure that the constructor-picking helper chooses
+   * the most specific constructor that suits the parameters.
+   * @exception ReflectiveOperationException Should not occur
+   * unless the test conditions are wrong.
+   */
+  @Test
+  public void shouldChooseMostSpecificConstructorForParameters()
+    throws ReflectiveOperationException {
+    assertEquals(
+      AbstractPermissionWrapper.getBestFitConstructor(
+        PermissionWrapperStub.class, 2),
+      PermissionWrapperStub.class.getConstructor(
+        String.class,
+        String.class
+      ),
+      "Expected to use 2-String constructor"
+    );
+  }
+
+  /**
    * Check that constructor identification ignores constructors
    * with non-String argument types.
    * @exception ReflectiveOperationException Should not occur
@@ -164,6 +184,34 @@ public final class AbstractPermissionWrapperTest {
 
     /** We don't really need this, but meh. */
     private static final long serialVersionUID = 20141227L;
+
+    /**
+     * Construct a stub named "wrapper" for a TestPermission.
+     * @param parameters Any parameters to construct the wrapped permission,
+     * separated by a pipeline |
+     * @exception ReflectiveOperationException If the wrapped permission
+     * cannot be constructed from the given class name and arguments.
+     */
+    public PermissionWrapperStub(
+        final String parameters
+      ) throws ReflectiveOperationException {
+      this(TestPermission.class.getName(), parameters);
+    }
+
+    /**
+     * Construct a stub named "wrapper" for a permission of the specified class.
+     * @param className The class name of the wrapped permission.
+     * @param parameters Any parameters to construct the wrapped permission,
+     * separated by a pipeline |
+     * @exception ReflectiveOperationException If the wrapped permission
+     * cannot be constructed from the given class name and arguments.
+     */
+    public PermissionWrapperStub(
+        final String className,
+        final String parameters
+      ) throws ReflectiveOperationException {
+      this("wrapper", className, parameters);
+    }
 
     /**
      * @param name The permission name to use in this wrapper.
