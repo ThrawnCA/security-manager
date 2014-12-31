@@ -2,21 +2,41 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>id.thrawnca</groupId>
   <artifactId>security-manager</artifactId>
-  <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
 
-  <prerequisites>
-    <maven>3.0.1</maven>
-  </prerequisites>
+  <name>security-manager</name>
+  <description>A custom security manager implementation designed for hardening of J2EE environments.</description>
+  <url>https://github.com/thrawnca/security-manager</url>
+  <inceptionYear>2014</inceptionYear>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>thrawnca</id>
+      <name>Carl Antuar</name>
+      <email>shell_layer-github@yahoo.com.au</email>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <timezone>Australia/Brisbane</timezone>
+    </developer>
+  </developers>
+
+  <dependencies>
+    <dependency><groupId>org.testng</groupId><artifactId>testng</artifactId><version>6.8.13</version><scope>test</scope></dependency>
+  </dependencies>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <config.directory>${project.basedir}/src/main/config</config.directory>
   </properties>
-
-  <dependencies>
-    <dependency><scope>test</scope><groupId>org.testng</groupId><artifactId>testng</artifactId><version>6.8.13</version></dependency>
-  </dependencies>
 
   <build>
     <plugins>
@@ -25,6 +45,16 @@
         <configuration>
           <rulesUri>file:${config.directory}/versions-rules.xml</rulesUri>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.lewisd</groupId><artifactId>lint-maven-plugin</artifactId><version>0.0.8</version>
+        <executions>
+          <execution>
+            <id>check</id>
+            <phase>validate</phase>
+            <goals><goal>check</goal></goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-pmd-plugin</artifactId><version>3.2</version>
@@ -54,6 +84,7 @@
         </configuration>
         <executions>
           <execution>
+            <id>check</id>
             <phase>prepare-package</phase>
             <goals>
               <goal>check</goal>
@@ -69,6 +100,7 @@
         </configuration>
         <executions>
           <execution>
+            <id>check</id>
             <phase>prepare-package</phase>
             <goals>
               <goal>check</goal>
@@ -91,6 +123,7 @@
         </configuration>
         <executions>
           <execution>
+            <id>check</id>
             <phase>verify</phase>
             <goals>
               <goal>clean</goal>
@@ -111,6 +144,7 @@
         </configuration>
         <executions>
           <execution>
+            <id>check</id>
             <phase>prepare-package</phase>
             <goals>
               <goal>analyse</goal>
@@ -136,6 +170,7 @@
         </configuration>
         <executions>
           <execution>
+            <id>check</id>
             <phase>prepare-package</phase>
             <goals>
               <goal>check</goal>
@@ -177,4 +212,24 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <issueManagement>
+    <system>Github</system>
+    <url>https://github.com/ThrawnCA/security-manager/issues</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>None</system>
+    <url>None</url>
+  </ciManagement>
+
+  <scm>
+    <connection>scm:git:https://github.com/thrawnca/security-manager.git</connection>
+    <developerConnection>scm:git:https://github.com/thrawnca/security-manager.git</developerConnection>
+  </scm>
+
+  <prerequisites>
+    <maven>3.0.1</maven>
+  </prerequisites>
+
 </project>
