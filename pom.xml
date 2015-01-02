@@ -220,7 +220,7 @@
 
   <ciManagement>
     <system>Codeship</system>
-    <url>https://codeship.com/projects/</url>
+    <url>https://codeship.com/projects/b0fa1790-7448-0132-a265-2aca0eeadc1e/status?branch=master</url>
   </ciManagement>
 
   <scm>
