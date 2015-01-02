@@ -219,8 +219,8 @@
   </issueManagement>
 
   <ciManagement>
-    <system>None</system>
-    <url>None</url>
+    <system>Codeship</system>
+    <url>https://codeship.com/projects/</url>
   </ciManagement>
 
   <scm>
