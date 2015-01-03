@@ -113,13 +113,12 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
       }
       final SecurityContext securityContext = (SecurityContext) context;
       final Class[] callStack = ACTOR.getClassContext(securityContext);
-      if (!hasSecurityBypass(callStack)) {
-        checkPermissionForContext(
-          perm,
-          callStack,
-          ACTOR.getDomains(securityContext)
-        );
-      }
+      // we don't seem to need a check for the helper here
+      checkPermissionForContext(
+        perm,
+        callStack,
+        ACTOR.getDomains(securityContext)
+      );
     }
   }
 
