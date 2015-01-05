@@ -3,14 +3,12 @@ security-manager
 
 A custom implementation of the Java Security Manager, designed to provide extra protection and assurance for web applications. It allows the use of more flexible permission algorithms to better suit the security needs of a J2EE environment.
 
-The problem
-===========
+Background
+==========
 
-The default Java security manager implementation is designed as a generic sandbox for untrusted code; the canonical case is running an applet on a web page. To achieve this, it checks every class on the call stack, requiring them all to have permission for any potentially-dangerous operation. When all classes are either the Java APIs (trusted), or arbitrary potentially-malicious code (untrusted), this is a good approach. However, a typical web application has different needs and a different threat model:
+The default Java security manager implementation is designed as a generic sandbox for untrusted code; the canonical case is running an applet on a web page. To achieve this, it checks every class on the call stack, requiring them all to have permission for any potentially-dangerous operation. When all classes are either the Java APIs (trusted), or arbitrary potentially-malicious code (untrusted), this is a good approach.
 
-- All classes can likely be enumerated in advance;
-- Classes can be security-aware, not just obedient servants like the Java APIs;
-- The major threats are external, eg crafted input that triggers unexpected behavior in an otherwise-trusted library.
+However, a typical web application has different needs and a different threat model. The major threats are external, eg crafted input that triggers unexpected behavior in an otherwise-trusted library. We need to protect code from being subverted.
 
 The problem with the default approach is that the classes most exposed to attack - those at the beginning of the call stack, like the application server itself - are also the ones that must be granted every privilege, because they are always on the call stack. This means that we cannot easily sandbox those classes. What we need is for their privileges to be based on context, not just granted/forbidden.
 
@@ -22,6 +20,24 @@ This project provides custom security manager algorithms to help improve the sit
 The CallerBasedSecurityManager implementation simply looks for the *last non-system caller on the stack*. This class is assumed to be the one making the decision to perform a sensitive operation, and so its permissions are considered sufficient. This implementation is simple, and potentially suitable for a J2EE application, but has the weakness that unknown code could exploit the privileges granted to trusted code. It would certainly not be suitable for running applets.
 
 The GuestAwareSecurityManager implementation, on the other hand, recognises a new type of permission, which acts as a 'guest pass' for some other permission; that is to say, a class that holds guest permissions is permitted to be on the call stack, but there must also be a class on the stack holding the real permission in order for the operation to succeed. Guest passes are a strictly weaker permission than real permissions, and so this implementation is potentially more secure than the default one. Typical usage would involve granting a very broad guest pass, eg GuestPass(AllPermission), to system code such as the application server, and then specific real permissions to the deployed application. As long as the application is behaving normally, this will behave much like real permissions; however, the application server will not be permitted to act independently.
+
+Usage
+=====
+
+To enable the guest-aware security manager, you simply need to pass the appropriate property when starting the JVM:
+
+    -Djava.security.manager=id.thrawnca.security.GuestAwareSecurityManager
+
+To assist in discovering permission needs, you can also specify a flag that puts the security manager into log mode (similar to AppArmor's complain mode):
+
+    -Dthrawnca.security.manager.log_mode=true
+
+You can then grant guest permissions in your java.policy file, with syntax similar to:
+
+    grant codeBase <application server code> {
+      permission id.thrawnca.security.GuestPass "java.lang.RuntimePermission", "setSecurityManager";
+      permission id.thrawnca.security.GuestPass "java.io.FilePermission", "read|/etc/passwd";
+    }
 
 Future plans
 ============
