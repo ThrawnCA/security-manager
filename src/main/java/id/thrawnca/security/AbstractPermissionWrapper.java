@@ -76,7 +76,7 @@ public abstract class AbstractPermissionWrapper extends Permission {
     if (constructor == null) {
       throw new IllegalArgumentException(
         "No constructor found for class " + permissionClass
-        + " and parameter(s) [" + parameters + "]"
+        + " and parameter(s) [" + parameters + ']'
       );
     }
     final Class[] argTypes = new Class[constructor.getParameterTypes().length];
