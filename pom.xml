@@ -94,7 +94,10 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-checkstyle-plugin</artifactId><version>2.15</version>
+        <artifactId>maven-checkstyle-plugin</artifactId><version>2.16</version>
+        <dependencies>
+          <dependency><groupId>com.puppycrawl.tools</groupId><artifactId>checkstyle</artifactId><version>6.11.2</version></dependency>
+        </dependencies> 
         <configuration>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>

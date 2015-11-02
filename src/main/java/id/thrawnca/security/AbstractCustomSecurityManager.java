@@ -270,7 +270,7 @@ public abstract class AbstractCustomSecurityManager extends SecurityManager {
      * NB The contents of this map may be externally altered
      * before the logger is actually run.
      */
-    public FailedPermissionsLogger(
+    FailedPermissionsLogger(
         final Map<ProtectionDomain, Set<Permission>> permissionMap
       ) {
       permissionsNeeded = permissionMap;

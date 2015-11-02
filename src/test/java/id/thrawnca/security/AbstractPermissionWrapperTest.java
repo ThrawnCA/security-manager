@@ -152,8 +152,8 @@ public final class AbstractPermissionWrapperTest {
     );
     assertEquals(perm.toString(),
       "(\"" + perm.getClass().getName()
-      + "\" (\"java.io.FilePermission\" \"target/foo\" \"read,write\"))"
-      , "Incorrect toString output"
+      + "\" (\"java.io.FilePermission\" \"target/foo\" \"read,write\"))",
+      "Incorrect toString output"
     );
   }
 
