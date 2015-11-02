@@ -104,6 +104,8 @@ public final class GuestPassTest {
    * @param other Object that may or may not be equal to 'guestPass'.
    * @param shouldMatch Whether we expect 'guestPass' to equal 'other'.
    */
+  // false positive because TestNG assertions reverse the order
+  @SuppressWarnings("PMD.JUnitAssertionsShouldIncludeMessage")
   @Test(dataProvider = "equalPermissions")
   public void shouldEqualGuestPassForSamePermission(
       final GuestPass guestPass,
